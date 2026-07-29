@@ -161,6 +161,28 @@ data class StaticDrawReplacementContinuation(
 ) : ContinuationFrame
 
 /**
+ * Resume after the player picks an option for a Dredge offer (CR 702.52): option 0 is "Draw a
+ * card", every other option mills that graveyard card's dredge amount and returns it to hand
+ * instead of drawing.
+ *
+ * @property drawingPlayerId The player who is about to draw
+ * @property eligibleCardIds Graveyard cards with a payable dredge ability, in the same order as
+ *     the decision's non-"draw" options (option index `i` maps to `eligibleCardIds[i - 1]`)
+ * @property drawCount Number of draws remaining (including this one)
+ * @property isDrawStep Whether this is from the draw step (vs spell/ability draws)
+ * @property drawnCardsSoFar Cards already drawn before this offer was made
+ */
+@Serializable
+data class DredgeDecisionContinuation(
+    override val decisionId: String,
+    val drawingPlayerId: EntityId,
+    val eligibleCardIds: List<EntityId>,
+    val drawCount: Int,
+    val isDrawStep: Boolean,
+    val drawnCardsSoFar: List<EntityId> = emptyList()
+) : ContinuationFrame
+
+/**
  * Resume the draw step of a cycling action after cycling triggers have resolved.
  *
  * When cycling triggers (e.g., Choking Tethers' "you may tap target creature") pause

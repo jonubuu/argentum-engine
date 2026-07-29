@@ -5421,6 +5421,22 @@ composite abilities).
 - `Modular(n)` — ETB with +1/+1 counters, transfer on death.
 - `Fading(n)` — ETB with N fade counters; removes one each upkeep, sacrifice if can't.
 - `Vanishing(n)` — same idea with time counters.
+- `Dredge(n)` (`KeywordAbility.dredge(n)` / `Numeric(Keyword.DREDGE, n)`) — Dredge N (CR 702.52). A static ability
+  that functions only while the card sits in its owner's graveyard: any time that player would draw
+  a card, they may instead mill N cards and return this card from the graveyard to hand — not itself
+  a draw (CR 121.5), and requires at least N cards in library to attempt (CR 702.52b, checked against
+  the *printed* N; `MillAmountModifier` still applies to the actual mill count). Wired into the single
+  shared draw chokepoint every draw call site already funnels through
+  (`DrawReplacementDispatcher.checkBeforeDraw` step 3b, alongside the Parallel Thoughts-style static
+  replacement check it sits next to) — draw-step draws, spell/ability draws, and cycling's own draw
+  are all covered uniformly, with no per-card-site special-casing. When multiple graveyard cards have
+  a payable dredge ability, all of them plus "Draw a card" are offered in one `ChooseOptionDecision`
+  (`DredgeDecisionContinuation` / `DrawReplacementContinuationResumer.resumeDredgeDecision`) — CR
+  702.52a's choice is "which card, if any," not an ordered series of yes/no prompts. A card milled by
+  an earlier dredge in a multi-draw instruction is eligible for a later draw in that same instruction,
+  since eligibility is recomputed fresh from current state on every individual draw (CR 121.6b).
+  Declining, or having no eligible graveyard card, falls through to the normal draw. Example: Dakmor
+  Salvage (`{T}: Add {B}. Dredge 2.`).
 - `Renown(n)` — first combat damage to a player grants renown counters.
 - `Fabricate(n)` — ETB choose +1/+1 counters or Servo tokens.
 - `Tribute(n)` — opponent chooses ETB bonus.

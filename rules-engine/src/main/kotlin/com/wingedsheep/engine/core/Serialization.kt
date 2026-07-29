@@ -329,6 +329,7 @@ val engineSerializersModule = SerializersModule {
         subclass(CastAnyNumberFromCollectionContinuation::class)
         subclass(CastSpellAdditionalCostContinuation::class)
         subclass(StaticDrawReplacementContinuation::class)
+        subclass(DredgeDecisionContinuation::class)
         subclass(TokenCreationReplacementContinuation::class)
         subclass(LeylineDecisionContinuation::class)
         subclass(ActivateAbilityChooseXContinuation::class)

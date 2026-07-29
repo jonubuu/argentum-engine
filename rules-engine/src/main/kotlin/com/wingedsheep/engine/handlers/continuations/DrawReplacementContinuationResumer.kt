@@ -4,13 +4,19 @@ import com.wingedsheep.engine.core.*
 import com.wingedsheep.engine.handlers.CostHandler
 import com.wingedsheep.engine.handlers.EffectContext
 import com.wingedsheep.engine.handlers.PipelineState
+import com.wingedsheep.engine.handlers.effects.ZoneTransitionService
 import com.wingedsheep.engine.handlers.effects.drawing.DrawCardsExecutor
+import com.wingedsheep.engine.handlers.effects.library.MillAmountModifier
 import com.wingedsheep.engine.mechanics.mana.ManaPool
 import com.wingedsheep.engine.mechanics.mana.ManaSolver
 import com.wingedsheep.engine.state.GameState
+import com.wingedsheep.engine.state.ZoneKey
 import com.wingedsheep.engine.state.components.identity.CardComponent
 import com.wingedsheep.engine.state.components.player.ManaPoolComponent
+import com.wingedsheep.sdk.core.Keyword
+import com.wingedsheep.sdk.core.Zone
 import com.wingedsheep.sdk.model.EntityId
+import com.wingedsheep.sdk.scripting.KeywordAbility
 
 class DrawReplacementContinuationResumer(
     private val services: com.wingedsheep.engine.core.EngineServices
@@ -19,7 +25,8 @@ class DrawReplacementContinuationResumer(
     override fun resumers(): List<ContinuationResumer<*>> = listOf(
         resumer(DrawReplacementActivationContinuation::class, ::resumeDrawReplacementActivation),
         resumer(DrawReplacementTargetContinuation::class, ::resumeDrawReplacementTarget),
-        resumer(StaticDrawReplacementContinuation::class, ::resumeStaticDrawReplacement)
+        resumer(StaticDrawReplacementContinuation::class, ::resumeStaticDrawReplacement),
+        resumer(DredgeDecisionContinuation::class, ::resumeDredgeDecision)
     )
 
     /**
@@ -470,6 +477,99 @@ class DrawReplacementContinuationResumer(
             events.addAll(drawResult.events)
 
             // Set priority for draw step
+            if (continuation.isDrawStep) {
+                newState = newState.withPriority(playerId)
+            }
+        } else if (continuation.isDrawStep) {
+            newState = newState.withPriority(playerId)
+        }
+
+        return checkForMore(newState, events)
+    }
+
+    /**
+     * Resume after the player picks an option for a Dredge offer (CR 702.52).
+     *
+     * Option 0 ("Draw a card"): draw 1 normally, no mill or hand return.
+     * Any other option: mill that card's dredge amount from the library, then return the card
+     * from graveyard to hand *instead of* drawing — CR 121.5, this is not itself a "draw" and
+     * emits no [CardsDrawnEvent].
+     */
+    fun resumeDredgeDecision(
+        state: GameState,
+        continuation: DredgeDecisionContinuation,
+        response: DecisionResponse,
+        checkForMore: CheckForMore
+    ): ExecutionResult {
+        if (response !is OptionChosenResponse) {
+            return ExecutionResult.error(state, "Expected option-choice response for dredge")
+        }
+
+        val playerId = continuation.drawingPlayerId
+        var newState = state
+        val events = mutableListOf<GameEvent>()
+
+        if (response.optionIndex == 0) {
+            // Declined — draw 1 card normally (skip prompts, this draw's replacements were
+            // already handled), then continue remaining draws with prompting re-enabled.
+            val singleDrawExecutor = DrawCardsExecutor(cardRegistry = services.cardRegistry, effectExecutor = services.effectExecutorRegistry::execute)
+            val singleDrawResult = singleDrawExecutor.executeDraws(newState, playerId, 1, skipPrompts = true).toExecutionResult()
+            if (singleDrawResult.isPaused) {
+                return ExecutionResult.paused(
+                    singleDrawResult.state,
+                    singleDrawResult.pendingDecision!!,
+                    events + singleDrawResult.events
+                )
+            }
+            newState = singleDrawResult.newState
+            events.addAll(singleDrawResult.events)
+        } else {
+            val cardId = continuation.eligibleCardIds.getOrNull(response.optionIndex - 1)
+                ?: return ExecutionResult.error(state, "Invalid dredge option")
+            val cardComponent = newState.getEntity(cardId)?.get<CardComponent>()
+                ?: return ExecutionResult.error(state, "Dredge card not found")
+            val cardDef = services.cardRegistry.getCard(cardComponent.cardDefinitionId)
+                ?: return ExecutionResult.error(state, "Dredge card definition not found")
+            val dredgeAmount = cardDef.keywordAbilities
+                .filterIsInstance<KeywordAbility.Numeric>()
+                .firstOrNull { it.keyword == Keyword.DREDGE }
+                ?.n
+                ?: return ExecutionResult.error(state, "Card no longer has dredge")
+
+            // Mill N cards (CR 702.52a) — same ModifyMillAmount chokepoint every other mill uses.
+            val effectiveMill = MillAmountModifier.apply(newState, playerId, dredgeAmount)
+            val toMill = newState.getZone(ZoneKey(playerId, Zone.LIBRARY)).take(effectiveMill)
+            val millResult = ZoneTransitionService.moveToZoneBatch(newState, toMill, Zone.GRAVEYARD)
+            newState = millResult.state
+            events.addAll(millResult.events)
+
+            // Return the dredge card from graveyard to hand instead of drawing.
+            val returnResult = ZoneTransitionService.moveToZone(newState, cardId, Zone.HAND)
+            newState = returnResult.state
+            events.addAll(returnResult.events)
+        }
+
+        // Continue remaining draws (drawCount - 1) — CR 121.6b: each replaced draw completes
+        // before the sequence resumes, so a later draw in the same instruction can dredge again.
+        val remainingDraws = continuation.drawCount - 1
+        if (remainingDraws > 0) {
+            val drawResult = if (continuation.isDrawStep) {
+                val turnManager = TurnManager(cardRegistry = services.cardRegistry, effectExecutor = services.effectExecutorRegistry::execute)
+                turnManager.drawCards(newState, playerId, remainingDraws)
+            } else {
+                val drawExecutor = DrawCardsExecutor(cardRegistry = services.cardRegistry, effectExecutor = services.effectExecutorRegistry::execute)
+                drawExecutor.executeDraws(newState, playerId, remainingDraws).toExecutionResult()
+            }
+            if (drawResult.isPaused) {
+                return ExecutionResult.paused(
+                    drawResult.state,
+                    drawResult.pendingDecision!!,
+                    events + drawResult.events
+                )
+            }
+            newState = drawResult.newState
+            events.addAll(drawResult.events)
+
             if (continuation.isDrawStep) {
                 newState = newState.withPriority(playerId)
             }

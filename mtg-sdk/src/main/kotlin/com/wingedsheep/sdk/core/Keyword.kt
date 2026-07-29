@@ -420,6 +420,7 @@ enum class Keyword(val displayName: String) {
     MODULAR("Modular"),
     FADING("Fading"),
     VANISHING("Vanishing"),
+    DREDGE("Dredge"),
 
     /**
      * Suspend (CR 702.62). A card with suspend can be exiled with a number of time

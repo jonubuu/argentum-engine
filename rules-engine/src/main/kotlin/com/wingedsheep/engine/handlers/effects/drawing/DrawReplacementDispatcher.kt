@@ -1,8 +1,10 @@
 package com.wingedsheep.engine.handlers.effects.drawing
 
+import com.wingedsheep.engine.core.ChooseOptionDecision
 import com.wingedsheep.engine.core.DecisionContext
 import com.wingedsheep.engine.core.DecisionPhase
 import com.wingedsheep.engine.core.DecisionRequestedEvent
+import com.wingedsheep.engine.core.DredgeDecisionContinuation
 import com.wingedsheep.engine.core.DrawReplacementActivationContinuation
 import com.wingedsheep.engine.core.EffectResult
 import com.wingedsheep.engine.core.GameEvent
@@ -14,12 +16,16 @@ import com.wingedsheep.engine.handlers.EffectContext
 import com.wingedsheep.engine.mechanics.mana.ManaSolver
 import com.wingedsheep.engine.registry.CardRegistry
 import com.wingedsheep.engine.state.GameState
+import com.wingedsheep.engine.state.ZoneKey
 import com.wingedsheep.engine.state.components.battlefield.LinkedExileComponent
 import com.wingedsheep.engine.state.components.battlefield.ReplacementEffectSourceComponent
 import com.wingedsheep.engine.state.components.identity.CardComponent
 import com.wingedsheep.engine.state.components.identity.ControllerComponent
+import com.wingedsheep.sdk.core.Keyword
+import com.wingedsheep.sdk.core.Zone
 import com.wingedsheep.sdk.model.EntityId
 import com.wingedsheep.sdk.scripting.AbilityCost
+import com.wingedsheep.sdk.scripting.KeywordAbility
 import com.wingedsheep.sdk.scripting.costs.manaCostOrNull
 import com.wingedsheep.sdk.scripting.ModifyDrawAmount
 import com.wingedsheep.sdk.scripting.PreventDraw
@@ -39,6 +45,8 @@ import java.util.UUID
  *  2. Static draw prevention effects — Mornsong Aria / Narset-style effects.
  *  3. Static draw replacement effect — Parallel Thoughts-style optional
  *     yes/no prompt that replaces the draw with an alternative effect.
+ *  3b. Dredge (CR 702.52) — graveyard cards with a payable dredge ability offer
+ *     "mill N and return this card to hand" instead of drawing.
  *  4. Prompt-on-draw activated ability — `activatedAbilities` with
  *     `promptOnDraw = true`, e.g. Words of Wind cycling.
  *
@@ -82,9 +90,10 @@ class DrawReplacementDispatcher(
      *     for continuation state and partial-draw event flushing.
      * @param isDrawStep whether this is the active player's draw-step draw
      *     (vs a spell/ability draw).
-     * @param skipStaticReplacement skip the Parallel Thoughts check; set by
-     *     callers that pass the historical `skipPrompts = true` flag when
-     *     resuming after a prior decision already handled replacements.
+     * @param skipStaticReplacement skip the Parallel Thoughts check and the
+     *     Dredge offer; set by callers that pass the historical
+     *     `skipPrompts = true` flag when resuming after a prior decision
+     *     already handled replacements for this draw.
      * @param skipPromptOnDraw skip the prompt-on-draw check; set by the
      *     draw-step path (which asks up-front once in `performDrawStep`) and
      *     by resume paths that have already handled the prompt.
@@ -135,6 +144,14 @@ class DrawReplacementDispatcher(
             )
             if (staticResult != null) {
                 return DispatchResult.Paused(staticResult)
+            }
+
+            // 3b. Dredge (CR 702.52).
+            val dredgeResult = checkDredge(
+                state, playerId, drawsLeftIncludingThis, drawnCardsSoFar, isDrawStep
+            )
+            if (dredgeResult != null) {
+                return DispatchResult.Paused(dredgeResult)
             }
         }
 
@@ -249,6 +266,80 @@ class DrawReplacementDispatcher(
             }
         }
         return null
+    }
+
+    /**
+     * Check if [playerId] owns any graveyard card whose dredge ability is payable right now
+     * (CR 702.52b: library size must be at least the printed dredge amount). If so, returns a
+     * paused [EffectResult] with a [ChooseOptionDecision] offering "Draw a card" plus one option
+     * per eligible card; otherwise returns `null` and the draw proceeds normally.
+     *
+     * Every eligible card is offered in a single decision (rather than one yes/no per card, the
+     * way [checkStaticDrawReplacement] does it) because CR 702.52a's choice is "which dredge
+     * card, if any" — there's no meaningful order to ask them in one at a time.
+     */
+    fun checkDredge(
+        state: GameState,
+        playerId: EntityId,
+        drawCount: Int,
+        drawnCardsSoFar: List<EntityId>,
+        isDrawStep: Boolean
+    ): EffectResult? {
+        val libraryCount = state.getZone(ZoneKey(playerId, Zone.LIBRARY)).size
+
+        val eligible = state.getZone(ZoneKey(playerId, Zone.GRAVEYARD)).mapNotNull { cardId ->
+            val card = state.getEntity(cardId)?.get<CardComponent>() ?: return@mapNotNull null
+            val cardDef = cardRegistry.getCard(card.cardDefinitionId) ?: return@mapNotNull null
+            val dredge = cardDef.keywordAbilities
+                .filterIsInstance<KeywordAbility.Numeric>()
+                .firstOrNull { it.keyword == Keyword.DREDGE }
+                ?: return@mapNotNull null
+            // CR 702.52b — can't attempt to dredge without at least N cards in library.
+            if (libraryCount < dredge.n) return@mapNotNull null
+            cardId to dredge.n
+        }
+        if (eligible.isEmpty()) return null
+
+        val decisionId = UUID.randomUUID().toString()
+        val options = listOf("Draw a card") + eligible.map { (cardId, n) ->
+            val name = state.getEntity(cardId)?.get<CardComponent>()?.name ?: "Unknown"
+            "Dredge $name (mill $n)"
+        }
+        val optionCardIds = eligible.withIndex().associate { (i, pair) -> (i + 1) to listOf(pair.first) }
+
+        val decision = ChooseOptionDecision(
+            id = decisionId,
+            playerId = playerId,
+            prompt = "Draw a card, or dredge instead?",
+            context = DecisionContext(sourceId = null, sourceName = "Dredge", phase = DecisionPhase.RESOLUTION),
+            options = options,
+            optionCardIds = optionCardIds
+        )
+
+        val continuation = DredgeDecisionContinuation(
+            decisionId = decisionId,
+            drawingPlayerId = playerId,
+            eligibleCardIds = eligible.map { it.first },
+            drawCount = drawCount,
+            isDrawStep = isDrawStep,
+            drawnCardsSoFar = drawnCardsSoFar
+        )
+
+        val stateWithDecision = state.withPendingDecision(decision)
+        val stateWithContinuation = stateWithDecision.pushContinuation(continuation)
+
+        return EffectResult.paused(
+            stateWithContinuation,
+            decision,
+            listOf(
+                DecisionRequestedEvent(
+                    decisionId = decisionId,
+                    playerId = playerId,
+                    decisionType = "CHOOSE_OPTION",
+                    prompt = decision.prompt
+                )
+            )
+        )
     }
 
     /**

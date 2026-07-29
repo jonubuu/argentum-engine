@@ -52,6 +52,12 @@ internal fun BridgeBuilder.keywords() {
     // `keywordAbility(KeywordAbility.saddle(N))`; this `supported` entry only marks the capability as
     // covered (never blocking) so the probe doesn't report Saddle as a gap.
     supported("Saddle", "keyword ability: Saddle N -> keywordAbility(KeywordAbility.saddle(N)) (CR 702.171)")
+    // Dredge N (CR 702.52) — a PARAMETERIZED keyword ability (the N count rides as a nested
+    // `_GameNumber: Integer`, exactly like Saddle), so `supported` rather than `keyword`. The
+    // emitter's `rname == "Dredge"` branch renders `keywordAbility(KeywordAbility.dredge(N))`; the
+    // engine's `DrawReplacementDispatcher` offers the mill-and-return-to-hand replacement at every
+    // draw call site while the card sits in its owner's graveyard — no other card-side wiring needed.
+    supported("Dredge", "keyword ability: Dredge N -> keywordAbility(KeywordAbility.dredge(N)) (CR 702.52)")
     // "Crew N. Activate only once each turn." (Luxurious Locomotive) — a PARAMETERIZED keyword ability
     // like Saddle/Crew, so `supported` (not `keyword`) to avoid dropping the N. The emitter's
     // `rname == "CrewOnceEachTurn"` branch renders `keywordAbility(KeywordAbility.crew(N, onceEachTurn = true))`;

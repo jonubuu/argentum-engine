@@ -265,6 +265,11 @@ object Emitter {
                 // than reading args directly as an Int. Renders `keywordAbility(KeywordAbility.saddle(N))`,
                 // exactly like Crew above; the engine synthesises the Saddle special action from the keyword.
                 rname == "Saddle" -> block = (findInteger(rule["args"]) as? Int)?.let { listOf(Eval(call("keywordAbility", arg(call("KeywordAbility.saddle", arg("$it")))))) }
+                // Dredge N (CR 702.52) — a numeric keyword ability shaped the same as Saddle (count
+                // rides in a nested `_GameNumber: Integer`). Renders `keywordAbility(KeywordAbility.dredge(N))`;
+                // the engine offers the mill-and-return-to-hand replacement at every draw call site
+                // while the card sits in its owner's graveyard — no other card-side wiring needed.
+                rname == "Dredge" -> block = (findInteger(rule["args"]) as? Int)?.let { listOf(Eval(call("keywordAbility", arg(call("KeywordAbility.dredge", arg("$it")))))) }
                 // Firebending N (CR 702.189, Avatar: The Last Airbender) — a numeric keyword ability
                 // whose count rides in a nested `_GameNumber: Integer` (like Saddle). Unlike Saddle,
                 // the engine has no Firebending handler: the behavior (attack -> add N {R} that lasts
