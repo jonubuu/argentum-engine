@@ -1,7 +1,6 @@
 package com.wingedsheep.mtg.sets.definitions.dft.cards
 
 import com.wingedsheep.sdk.core.Keyword
-import com.wingedsheep.sdk.core.ManaCost
 import com.wingedsheep.sdk.dsl.Effects
 import com.wingedsheep.sdk.dsl.Patterns
 import com.wingedsheep.sdk.dsl.card
@@ -46,7 +45,7 @@ val SpectacularPileup = card("Spectacular Pileup") {
         )
     }
 
-    keywordAbility(KeywordAbility.Cycling(ManaCost.parse("{2}")))
+    keywordAbility(KeywordAbility.cycling("{2}"))
 
     metadata {
         rarity = Rarity.RARE

@@ -5543,9 +5543,17 @@ composite abilities).
   Boosters. Author the per-card equip cost and equipped-creature bonus alongside the `jobSelect()` call (e.g. Monk's
   Fist: `jobSelect()` + `ModifyStats(1, 0)` + `GrantSubtype("Monk", Filters.EquippedCreature)` + `equipAbility("{2}")`).
 - `Toxic(n)` — adds poison counters on combat damage.
-- `Cycling(cost)` — pay cost, discard, draw a card.
+- `Cycling(cost)` — pay cost, discard, draw a card. `cost` is an `AbilityCost` (not a bare `ManaCost`), so
+  it's not limited to mana: `KeywordAbility.cycling(manaCostString)` builds a `CostAtom.Mana` atom (CR
+  702.29a templating: "Cycling {cost}"), and `KeywordAbility.cyclingPayLife(amount)` builds a
+  `CostAtom.PayLife` atom for the life-paid variant (Street Wraith: "Cycling—Pay 2 life", em-dash
+  templating). `CycleCardHandler` branches on the atom kind — the mana branch keeps the existing
+  floating-pool-then-tap-lands payment untouched; the life branch pays through `DamageUtils.loseLife`
+  with no confirmation prompt, same as any other activated-ability `PayLife` cost.
 - `BasicLandcycling(cost)` — cycling that fetches a basic land type.
-- `Typecycling(type, cost)` — cycling that fetches a card type.
+- `Typecycling(type, cost)` — cycling that fetches a card type. Typecycling costs are always mana in
+  every printed card — `TypecycleCardHandler`/`CyclingEnumerator` unwrap the `CostAtom.Mana` atom and
+  simply don't offer the action if a typecycling variant is ever given a non-mana cost.
 - `Plot(cost)` — `KeywordAbility.plot(cost)`. Special action available during your main phase while the stack is empty: pay [cost] and exile the card from your hand. It becomes plotted (stamped with a `PlottedComponent`). On a later turn you may cast it from exile without paying its mana cost, as a sorcery (CR 718). Cast permission is granted via the engine's standard `MayPlayPermission` + `PlayWithoutPayingCostComponent`, gated by `Conditions.SourcePlottedOnPriorTurn`. No card-side wiring needed — declare the keyword ability on the card and the engine handles the rest.
 - `Foretell(cost)` — `KeywordAbility.foretell(cost)` (Kaldheim, CR 702.143). A sorcery-speed **special action** available while you have priority during your own turn: pay the fixed **{2}** setup cost and exile the card from your hand **face down** (`ForetoldComponent` + `FaceDownComponent` — hidden from opponents in exile, visible to its owner). On a **later** turn (not the turn it was foretold) you may cast it from exile by paying its **foretell cost** `[cost]` rather than its mana cost. Cast permission is a standard permanent `MayPlayPermission` gated by `Conditions.SourceForetoldOnPriorTurn`, plus a `PlayWithFixedAlternativeManaCostComponent` carrying `[cost]` — the same fixed-alternative-cast machinery **Airbend** uses, honored by `CastFromZoneEnumerator` + `CastSpellHandler` and stripped on leaving exile by `StackResolver` (which also strips the `FaceDownComponent` as the card is cast face up). Structurally Plot's paid cousin (`ForetellCardHandler` / `ForetellEnumerator` mirror `PlotCardHandler` / `PlotEnumerator`): plot is free to set up and free to cast later, foretell costs {2} to exile and has a distinct foretell cost to cast. No card-side wiring needed — declare the keyword ability and the engine handles the rest.
 - `Hideaway(n)` — `KeywordAbility.hideaway(n)`; display tag rendered "Hideaway N". Mechanic is composed manually via `MoveCollectionEffect(faceDown = FaceDownMode.HIDDEN, linkToSource = true)` + `CardSource.FromLinkedExile()` — the keyword itself carries no engine behavior.

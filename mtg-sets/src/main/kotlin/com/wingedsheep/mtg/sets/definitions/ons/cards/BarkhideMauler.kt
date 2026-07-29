@@ -3,7 +3,6 @@ package com.wingedsheep.mtg.sets.definitions.ons.cards
 import com.wingedsheep.sdk.dsl.card
 import com.wingedsheep.sdk.model.Rarity
 import com.wingedsheep.sdk.scripting.KeywordAbility
-import com.wingedsheep.sdk.core.ManaCost
 
 /**
  * Barkhide Mauler
@@ -20,7 +19,7 @@ val BarkhideMauler = card("Barkhide Mauler") {
     toughness = 4
     oracleText = "Cycling {2}"
 
-    keywordAbility(KeywordAbility.Cycling(ManaCost.parse("{2}")))
+    keywordAbility(KeywordAbility.cycling("{2}"))
 
     metadata {
         rarity = Rarity.COMMON

@@ -10909,7 +10909,13 @@
     "keywordAbilities": [
         {
             "type": "Cycling",
-            "cost": "{1}{R}",
+            "cost": {
+                "type": "CostAtomWrapper",
+                "atom": {
+                    "type": "AtomMana",
+                    "cost": "{1}{R}"
+                }
+            },
             "searchFilter": {
                 "cardPredicates": [
                     "IsBasicLand"
@@ -16966,7 +16972,13 @@
     "keywordAbilities": [
         {
             "type": "Cycling",
-            "cost": "{1}{U}",
+            "cost": {
+                "type": "CostAtomWrapper",
+                "atom": {
+                    "type": "AtomMana",
+                    "cost": "{1}{U}"
+                }
+            },
             "searchFilter": {
                 "cardPredicates": [
                     "IsBasicLand"

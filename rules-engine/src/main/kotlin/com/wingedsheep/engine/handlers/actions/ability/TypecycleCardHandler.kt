@@ -297,8 +297,14 @@ class TypecycleCardHandler(
             .filterIsInstance<KeywordAbility.Cycling>()
             .firstOrNull { it.searchFilter != null }
             ?: return null
+        // Every printed typecycling ability (Swampcycling, Slivercycling, ...) is a mana cost —
+        // no non-mana variant exists, so a non-mana Cycling.cost here means this card genuinely
+        // isn't payable through this handler.
+        val manaCost = (cycling.cost as? com.wingedsheep.sdk.scripting.AbilityCost.Atom)
+            ?.atom?.let { it as? com.wingedsheep.sdk.scripting.costs.CostAtom.Mana }?.cost
+            ?: return null
         return TypecyclingVariant(
-            cost = cycling.cost,
+            cost = manaCost,
             searchFilter = cycling.searchFilter!!,
             description = cycling.displayPrefix
         )

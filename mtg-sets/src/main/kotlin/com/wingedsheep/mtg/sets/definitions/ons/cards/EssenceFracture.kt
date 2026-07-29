@@ -1,6 +1,5 @@
 package com.wingedsheep.mtg.sets.definitions.ons.cards
 
-import com.wingedsheep.sdk.core.ManaCost
 import com.wingedsheep.sdk.core.Zone
 import com.wingedsheep.sdk.dsl.card
 import com.wingedsheep.sdk.model.Rarity
@@ -27,7 +26,7 @@ val EssenceFracture = card("Essence Fracture") {
                 Effects.Move(c2, Zone.HAND)
     }
 
-    keywordAbility(KeywordAbility.Cycling(ManaCost.parse("{2}{U}")))
+    keywordAbility(KeywordAbility.cycling("{2}{U}"))
 
     metadata {
         rarity = Rarity.UNCOMMON

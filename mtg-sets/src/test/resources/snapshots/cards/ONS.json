@@ -242,7 +242,13 @@
     "keywordAbilities": [
         {
             "type": "Cycling",
-            "cost": "{W}"
+            "cost": {
+                "type": "CostAtomWrapper",
+                "atom": {
+                    "type": "AtomMana",
+                    "cost": "{W}"
+                }
+            }
         }
     ],
     "script": {
@@ -284,7 +290,13 @@
     "keywordAbilities": [
         {
             "type": "Cycling",
-            "cost": "{3}"
+            "cost": {
+                "type": "CostAtomWrapper",
+                "atom": {
+                    "type": "AtomMana",
+                    "cost": "{3}"
+                }
+            }
         }
     ],
     "script": {
@@ -916,7 +928,13 @@
     "keywordAbilities": [
         {
             "type": "Cycling",
-            "cost": "{2}"
+            "cost": {
+                "type": "CostAtomWrapper",
+                "atom": {
+                    "type": "AtomMana",
+                    "cost": "{2}"
+                }
+            }
         }
     ],
     "script": {
@@ -1338,7 +1356,13 @@
     "keywordAbilities": [
         {
             "type": "Cycling",
-            "cost": "{U}"
+            "cost": {
+                "type": "CostAtomWrapper",
+                "atom": {
+                    "type": "AtomMana",
+                    "cost": "{U}"
+                }
+            }
         }
     ],
     "script": {
@@ -1391,7 +1415,13 @@
     "keywordAbilities": [
         {
             "type": "Cycling",
-            "cost": "{2}"
+            "cost": {
+                "type": "CostAtomWrapper",
+                "atom": {
+                    "type": "AtomMana",
+                    "cost": "{2}"
+                }
+            }
         }
     ],
     "metadata": {
@@ -1414,7 +1444,13 @@
     "keywordAbilities": [
         {
             "type": "Cycling",
-            "cost": "{B}"
+            "cost": {
+                "type": "CostAtomWrapper",
+                "atom": {
+                    "type": "AtomMana",
+                    "cost": "{B}"
+                }
+            }
         }
     ],
     "script": {
@@ -2926,7 +2962,13 @@
     "keywordAbilities": [
         {
             "type": "Cycling",
-            "cost": "{1}{U}"
+            "cost": {
+                "type": "CostAtomWrapper",
+                "atom": {
+                    "type": "AtomMana",
+                    "cost": "{1}{U}"
+                }
+            }
         }
     ],
     "script": {
@@ -3099,7 +3141,13 @@
     "keywordAbilities": [
         {
             "type": "Cycling",
-            "cost": "{2}{U}"
+            "cost": {
+                "type": "CostAtomWrapper",
+                "atom": {
+                    "type": "AtomMana",
+                    "cost": "{2}{U}"
+                }
+            }
         }
     ],
     "script": {
@@ -4356,7 +4404,13 @@
     "keywordAbilities": [
         {
             "type": "Cycling",
-            "cost": "{1}{B}{B}"
+            "cost": {
+                "type": "CostAtomWrapper",
+                "atom": {
+                    "type": "AtomMana",
+                    "cost": "{1}{B}{B}"
+                }
+            }
         }
     ],
     "script": {
@@ -4526,7 +4580,13 @@
     "keywordAbilities": [
         {
             "type": "Cycling",
-            "cost": "{1}{B}"
+            "cost": {
+                "type": "CostAtomWrapper",
+                "atom": {
+                    "type": "AtomMana",
+                    "cost": "{1}{B}"
+                }
+            }
         }
     ],
     "script": {
@@ -4601,7 +4661,13 @@
         },
         {
             "type": "Cycling",
-            "cost": "{2}"
+            "cost": {
+                "type": "CostAtomWrapper",
+                "atom": {
+                    "type": "AtomMana",
+                    "cost": "{2}"
+                }
+            }
         }
     ],
     "metadata": {
@@ -5920,7 +5986,13 @@
     "keywordAbilities": [
         {
             "type": "Cycling",
-            "cost": "{2}{U}"
+            "cost": {
+                "type": "CostAtomWrapper",
+                "atom": {
+                    "type": "AtomMana",
+                    "cost": "{2}{U}"
+                }
+            }
         }
     ],
     "script": {
@@ -6168,7 +6240,13 @@
     "keywordAbilities": [
         {
             "type": "Cycling",
-            "cost": "{B}"
+            "cost": {
+                "type": "CostAtomWrapper",
+                "atom": {
+                    "type": "AtomMana",
+                    "cost": "{B}"
+                }
+            }
         }
     ],
     "script": {
@@ -6736,7 +6814,13 @@
     "keywordAbilities": [
         {
             "type": "Cycling",
-            "cost": "{R}"
+            "cost": {
+                "type": "CostAtomWrapper",
+                "atom": {
+                    "type": "AtomMana",
+                    "cost": "{R}"
+                }
+            }
         }
     ],
     "script": {
@@ -8850,7 +8934,13 @@
     "keywordAbilities": [
         {
             "type": "Cycling",
-            "cost": "{3}"
+            "cost": {
+                "type": "CostAtomWrapper",
+                "atom": {
+                    "type": "AtomMana",
+                    "cost": "{3}"
+                }
+            }
         }
     ],
     "script": {
@@ -9688,7 +9778,13 @@
     "keywordAbilities": [
         {
             "type": "Cycling",
-            "cost": "{2}{G}"
+            "cost": {
+                "type": "CostAtomWrapper",
+                "atom": {
+                    "type": "AtomMana",
+                    "cost": "{2}{G}"
+                }
+            }
         }
     ],
     "script": {
@@ -9913,7 +10009,13 @@
     "keywordAbilities": [
         {
             "type": "Cycling",
-            "cost": "{U}"
+            "cost": {
+                "type": "CostAtomWrapper",
+                "atom": {
+                    "type": "AtomMana",
+                    "cost": "{U}"
+                }
+            }
         }
     ],
     "script": {
@@ -9953,7 +10055,13 @@
     "keywordAbilities": [
         {
             "type": "Cycling",
-            "cost": "{U}"
+            "cost": {
+                "type": "CostAtomWrapper",
+                "atom": {
+                    "type": "AtomMana",
+                    "cost": "{U}"
+                }
+            }
         }
     ],
     "script": {
@@ -11540,7 +11648,13 @@
     "keywordAbilities": [
         {
             "type": "Cycling",
-            "cost": "{2}{G}"
+            "cost": {
+                "type": "CostAtomWrapper",
+                "atom": {
+                    "type": "AtomMana",
+                    "cost": "{2}{G}"
+                }
+            }
         }
     ],
     "script": {
@@ -12079,7 +12193,13 @@
     "keywordAbilities": [
         {
             "type": "Cycling",
-            "cost": "{1}{W}"
+            "cost": {
+                "type": "CostAtomWrapper",
+                "atom": {
+                    "type": "AtomMana",
+                    "cost": "{1}{W}"
+                }
+            }
         }
     ],
     "script": {
@@ -13211,7 +13331,13 @@
     "keywordAbilities": [
         {
             "type": "Cycling",
-            "cost": "{W}"
+            "cost": {
+                "type": "CostAtomWrapper",
+                "atom": {
+                    "type": "AtomMana",
+                    "cost": "{W}"
+                }
+            }
         }
     ],
     "script": {
@@ -14125,7 +14251,13 @@
     "keywordAbilities": [
         {
             "type": "Cycling",
-            "cost": "{2}{R}"
+            "cost": {
+                "type": "CostAtomWrapper",
+                "atom": {
+                    "type": "AtomMana",
+                    "cost": "{2}{R}"
+                }
+            }
         }
     ],
     "script": {
@@ -14199,7 +14331,13 @@
     "keywordAbilities": [
         {
             "type": "Cycling",
-            "cost": "{1}{U}"
+            "cost": {
+                "type": "CostAtomWrapper",
+                "atom": {
+                    "type": "AtomMana",
+                    "cost": "{1}{U}"
+                }
+            }
         }
     ],
     "script": {
@@ -14423,7 +14561,13 @@
     "keywordAbilities": [
         {
             "type": "Cycling",
-            "cost": "{1}{R}{R}"
+            "cost": {
+                "type": "CostAtomWrapper",
+                "atom": {
+                    "type": "AtomMana",
+                    "cost": "{1}{R}{R}"
+                }
+            }
         }
     ],
     "script": {
@@ -15073,7 +15217,13 @@
     "keywordAbilities": [
         {
             "type": "Cycling",
-            "cost": "{3}"
+            "cost": {
+                "type": "CostAtomWrapper",
+                "atom": {
+                    "type": "AtomMana",
+                    "cost": "{3}"
+                }
+            }
         }
     ],
     "script": {
@@ -15169,7 +15319,13 @@
     "keywordAbilities": [
         {
             "type": "Cycling",
-            "cost": "{1}{W}"
+            "cost": {
+                "type": "CostAtomWrapper",
+                "atom": {
+                    "type": "AtomMana",
+                    "cost": "{1}{W}"
+                }
+            }
         }
     ],
     "script": {
@@ -16052,7 +16208,13 @@
     "keywordAbilities": [
         {
             "type": "Cycling",
-            "cost": "{G}"
+            "cost": {
+                "type": "CostAtomWrapper",
+                "atom": {
+                    "type": "AtomMana",
+                    "cost": "{G}"
+                }
+            }
         }
     ],
     "script": {
@@ -16414,7 +16576,13 @@
     "keywordAbilities": [
         {
             "type": "Cycling",
-            "cost": "{1}{B}"
+            "cost": {
+                "type": "CostAtomWrapper",
+                "atom": {
+                    "type": "AtomMana",
+                    "cost": "{1}{B}"
+                }
+            }
         }
     ],
     "script": {

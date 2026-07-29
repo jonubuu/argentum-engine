@@ -303,7 +303,7 @@ class CardDslTest : DescribeSpec({
                 power = 3
                 toughness = 4
                 keywords(Keyword.SWAMPWALK)
-                keywordAbility(KeywordAbility.Cycling(ManaCost.parse("{B/P}")))
+                keywordAbility(KeywordAbility.cycling("{B/P}"))
             }
 
             card.keywordAbilities shouldHaveSize 1

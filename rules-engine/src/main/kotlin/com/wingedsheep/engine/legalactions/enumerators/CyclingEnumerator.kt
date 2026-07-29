@@ -6,7 +6,9 @@ import com.wingedsheep.engine.legalactions.ActionEnumerator
 import com.wingedsheep.engine.legalactions.EnumerationContext
 import com.wingedsheep.engine.legalactions.LegalAction
 import com.wingedsheep.engine.state.components.identity.CardComponent
+import com.wingedsheep.sdk.scripting.AbilityCost
 import com.wingedsheep.sdk.scripting.KeywordAbility
+import com.wingedsheep.sdk.scripting.costs.CostAtom
 
 /**
  * Enumerates cycling and typecycling actions for cards in hand.
@@ -33,44 +35,65 @@ class CyclingEnumerator : ActionEnumerator {
             val typedCycling = cyclingAbilities.firstOrNull { it.searchFilter != null }
 
             if (plainCycling != null) {
-                val canAfford = context.manaSolver.canPay(state, playerId, plainCycling.cost, precomputedSources = context.availableManaSources)
-                val autoTapPreview = if (context.skipAutoTapPreview) null else {
-                    context.manaSolver.solve(state, playerId, plainCycling.cost, precomputedSources = context.availableManaSources)
-                        ?.sources?.map { it.entityId }
+                val manaCost = manaCostOf(plainCycling.cost)
+                val lifeCost = payLifeAmountOf(plainCycling.cost)
+                val (affordable, manaCostString, autoTapPreview) = when {
+                    manaCost != null -> Triple(
+                        context.manaSolver.canPay(state, playerId, manaCost, precomputedSources = context.availableManaSources),
+                        manaCost.toString(),
+                        if (context.skipAutoTapPreview) null else {
+                            context.manaSolver.solve(state, playerId, manaCost, precomputedSources = context.availableManaSources)
+                                ?.sources?.map { it.entityId }
+                        }
+                    )
+                    lifeCost != null -> Triple(state.lifeTotal(playerId) >= lifeCost, null, null)
+                    else -> Triple(false, null, null)
                 }
                 result.add(
                     LegalAction(
                         actionType = "CycleCard",
                         description = "Cycle ${cardComponent.name}",
                         action = CycleCard(playerId, cardId),
-                        affordable = canAfford,
-                        manaCostString = plainCycling.cost.toString(),
+                        affordable = affordable,
+                        manaCostString = manaCostString,
                         autoTapPreview = autoTapPreview
                     )
                 )
             }
 
             if (typedCycling != null) {
-                val cost = typedCycling.cost
-                val description = "${typedCycling.displayPrefix} ${cardComponent.name}"
-                val canAfford = context.manaSolver.canPay(state, playerId, cost, precomputedSources = context.availableManaSources)
-                val autoTapPreview = if (context.skipAutoTapPreview) null else {
-                    context.manaSolver.solve(state, playerId, cost, precomputedSources = context.availableManaSources)
-                        ?.sources?.map { it.entityId }
-                }
-                result.add(
-                    LegalAction(
-                        actionType = "TypecycleCard",
-                        description = description,
-                        action = TypecycleCard(playerId, cardId),
-                        affordable = canAfford,
-                        manaCostString = cost.toString(),
-                        autoTapPreview = autoTapPreview
+                // Every printed typecycling ability (Swampcycling, Slivercycling, ...) is a mana
+                // cost; a non-mana Cycling.cost here means this variant isn't offered.
+                val cost = manaCostOf(typedCycling.cost)
+                if (cost != null) {
+                    val description = "${typedCycling.displayPrefix} ${cardComponent.name}"
+                    val canAfford = context.manaSolver.canPay(state, playerId, cost, precomputedSources = context.availableManaSources)
+                    val autoTapPreview = if (context.skipAutoTapPreview) null else {
+                        context.manaSolver.solve(state, playerId, cost, precomputedSources = context.availableManaSources)
+                            ?.sources?.map { it.entityId }
+                    }
+                    result.add(
+                        LegalAction(
+                            actionType = "TypecycleCard",
+                            description = description,
+                            action = TypecycleCard(playerId, cardId),
+                            affordable = canAfford,
+                            manaCostString = cost.toString(),
+                            autoTapPreview = autoTapPreview
+                        )
                     )
-                )
+                }
             }
         }
 
         return result
     }
+
+    /** Every printed mana-cost cycling ability is a bare [CostAtom.Mana] atom (e.g. "Cycling {2}"). */
+    private fun manaCostOf(cost: AbilityCost) =
+        (cost as? AbilityCost.Atom)?.atom?.let { it as? CostAtom.Mana }?.cost
+
+    /** Life-paid cycling (Street Wraith: "Cycling—Pay 2 life") is a bare [CostAtom.PayLife] atom. */
+    private fun payLifeAmountOf(cost: AbilityCost) =
+        (cost as? AbilityCost.Atom)?.atom?.let { it as? CostAtom.PayLife }?.amount
 }

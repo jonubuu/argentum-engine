@@ -257,11 +257,15 @@ sealed interface KeywordAbility {
     @SerialName("Cycling")
     @Serializable
     data class Cycling(
-        val cost: ManaCost,
+        val cost: AbilityCost,
         val searchFilter: GameObjectFilter? = null,
         val displayPrefix: String = "Cycling"
     ) : KeywordAbility {
-        override val description: String = "$displayPrefix $cost"
+        // CR 702.29a templating: a mana cost reads "Cycling {cost}"; every other cost (life,
+        // discard, ...) reads "Cycling—[cost]" with an em dash (Street Wraith: "Cycling—Pay 2 life").
+        override val description: String =
+            (cost as? AbilityCost.Atom)?.atom?.let { it as? CostAtom.Mana }?.let { "$displayPrefix ${it.cost}" }
+                ?: "$displayPrefix—${cost.description}"
     }
 
     // =========================================================================
@@ -963,14 +967,21 @@ sealed interface KeywordAbility {
         /**
          * Create plain Cycling with mana cost from string.
          */
-        fun cycling(cost: String): KeywordAbility = Cycling(ManaCost.parse(cost))
+        fun cycling(cost: String): KeywordAbility =
+            Cycling(AbilityCost.Atom(CostAtom.Mana(ManaCost.parse(cost))))
+
+        /**
+         * Create plain Cycling paid with life instead of mana (Street Wraith: "Cycling—Pay 2 life").
+         */
+        fun cyclingPayLife(amount: Int): KeywordAbility =
+            Cycling(AbilityCost.Atom(CostAtom.PayLife(amount)))
 
         /**
          * Create Typecycling for a subtype (e.g., "Forest", "Sliver"). Display text is
          * "${subtype}cycling $cost"; the search filter is "any card with that subtype".
          */
         fun typecycling(subtype: String, cost: ManaCost): KeywordAbility = Cycling(
-            cost = cost,
+            cost = AbilityCost.Atom(CostAtom.Mana(cost)),
             searchFilter = GameObjectFilter.Any.withSubtype(subtype),
             displayPrefix = "${subtype}cycling"
         )
@@ -982,7 +993,7 @@ sealed interface KeywordAbility {
          * Create Basic landcycling — search the library for any basic land card.
          */
         fun basicLandcycling(cost: ManaCost): KeywordAbility = Cycling(
-            cost = cost,
+            cost = AbilityCost.Atom(CostAtom.Mana(cost)),
             searchFilter = GameObjectFilter.BasicLand,
             displayPrefix = "Basic landcycling"
         )

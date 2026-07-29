@@ -72,7 +72,13 @@
     "keywordAbilities": [
         {
             "type": "Cycling",
-            "cost": "{2}",
+            "cost": {
+                "type": "CostAtomWrapper",
+                "atom": {
+                    "type": "AtomMana",
+                    "cost": "{2}"
+                }
+            },
             "searchFilter": {
                 "cardPredicates": [
                     "IsBasicLand"
@@ -2529,7 +2535,13 @@
     "keywordAbilities": [
         {
             "type": "Cycling",
-            "cost": "{2}",
+            "cost": {
+                "type": "CostAtomWrapper",
+                "atom": {
+                    "type": "AtomMana",
+                    "cost": "{2}"
+                }
+            },
             "searchFilter": {
                 "cardPredicates": [
                     "IsBasicLand"
@@ -3621,7 +3633,13 @@
     "keywordAbilities": [
         {
             "type": "Cycling",
-            "cost": "{2}",
+            "cost": {
+                "type": "CostAtomWrapper",
+                "atom": {
+                    "type": "AtomMana",
+                    "cost": "{2}"
+                }
+            },
             "searchFilter": {
                 "cardPredicates": [
                     "IsBasicLand"

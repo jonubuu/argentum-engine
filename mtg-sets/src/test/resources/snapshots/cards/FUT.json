@@ -315,6 +315,43 @@
     ]
 }
 
+// Street Wraith
+{
+    "name": "Street Wraith",
+    "manaCost": "{3}{B}{B}",
+    "typeLine": "Creature — Wraith",
+    "oracleText": "Swampwalk (This creature can't be blocked as long as defending player controls a Swamp.)\nCycling—Pay 2 life. (Pay 2 life, Discard this card: Draw a card.)",
+    "creatureStats": {
+        "power": 3,
+        "toughness": 4
+    },
+    "keywords": [
+        "SWAMPWALK"
+    ],
+    "keywordAbilities": [
+        {
+            "type": "Cycling",
+            "cost": {
+                "type": "CostAtomWrapper",
+                "atom": {
+                    "type": "AtomPayLife",
+                    "amount": 2
+                }
+            }
+        }
+    ],
+    "metadata": {
+        "collectorNumber": "90",
+        "rarity": "UNCOMMON",
+        "artist": "Cyril Van Der Haegen",
+        "flavorText": "The lamps on Wyndmoor Street snuff themselves at midnight and refuse to relight, afraid to illuminate what lies in the darkness.",
+        "imageUri": "https://cards.scryfall.io/normal/front/6/7/672e2815-bbcc-4338-a8ba-9aa97142ea69.jpg?1783943108"
+    },
+    "colorIdentityOverride": [
+        "BLACK"
+    ]
+}
+
 // Tarmogoyf
 {
     "name": "Tarmogoyf",

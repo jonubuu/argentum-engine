@@ -3400,7 +3400,13 @@
     "keywordAbilities": [
         {
             "type": "Cycling",
-            "cost": "{1}",
+            "cost": {
+                "type": "CostAtomWrapper",
+                "atom": {
+                    "type": "AtomMana",
+                    "cost": "{1}"
+                }
+            },
             "searchFilter": {
                 "cardPredicates": [
                     {
@@ -6767,7 +6773,13 @@
     "keywordAbilities": [
         {
             "type": "Cycling",
-            "cost": "{1}",
+            "cost": {
+                "type": "CostAtomWrapper",
+                "atom": {
+                    "type": "AtomMana",
+                    "cost": "{1}"
+                }
+            },
             "searchFilter": {
                 "cardPredicates": [
                     {
@@ -10384,7 +10396,13 @@
     "keywordAbilities": [
         {
             "type": "Cycling",
-            "cost": "{1}",
+            "cost": {
+                "type": "CostAtomWrapper",
+                "atom": {
+                    "type": "AtomMana",
+                    "cost": "{1}"
+                }
+            },
             "searchFilter": {
                 "cardPredicates": [
                     {
@@ -12253,7 +12271,13 @@
     "keywordAbilities": [
         {
             "type": "Cycling",
-            "cost": "{1}",
+            "cost": {
+                "type": "CostAtomWrapper",
+                "atom": {
+                    "type": "AtomMana",
+                    "cost": "{1}"
+                }
+            },
             "searchFilter": {
                 "cardPredicates": [
                     {
@@ -18813,7 +18837,13 @@
     "keywordAbilities": [
         {
             "type": "Cycling",
-            "cost": "{1}",
+            "cost": {
+                "type": "CostAtomWrapper",
+                "atom": {
+                    "type": "AtomMana",
+                    "cost": "{1}"
+                }
+            },
             "searchFilter": {
                 "cardPredicates": [
                     {

@@ -6,6 +6,7 @@ import com.wingedsheep.engine.core.CycleCard
 import com.wingedsheep.engine.core.CycleDrawContinuation
 import com.wingedsheep.engine.core.ExecutionResult
 import com.wingedsheep.engine.core.GameEvent
+import com.wingedsheep.engine.core.LifeChangeReason
 import com.wingedsheep.engine.core.ManaSpentEvent
 import com.wingedsheep.engine.core.PaymentStrategy
 import com.wingedsheep.engine.core.tap
@@ -14,6 +15,7 @@ import com.wingedsheep.engine.event.TriggerDetector
 import com.wingedsheep.engine.event.TriggerProcessor
 import com.wingedsheep.engine.core.EngineServices
 import com.wingedsheep.engine.handlers.actions.ActionHandler
+import com.wingedsheep.engine.handlers.effects.DamageUtils
 import com.wingedsheep.engine.handlers.effects.drawing.DrawCardsExecutor
 import com.wingedsheep.engine.mechanics.mana.ManaPool
 import com.wingedsheep.engine.mechanics.mana.ManaSolver
@@ -24,9 +26,12 @@ import com.wingedsheep.engine.state.components.battlefield.TappedComponent
 import com.wingedsheep.engine.state.components.identity.CardComponent
 import com.wingedsheep.engine.state.components.player.ManaPoolComponent
 import com.wingedsheep.sdk.core.Color
+import com.wingedsheep.sdk.core.ManaCost
 import com.wingedsheep.sdk.core.Zone
+import com.wingedsheep.sdk.scripting.AbilityCost
 import com.wingedsheep.sdk.scripting.KeywordAbility
 import com.wingedsheep.sdk.scripting.PreventCycling
+import com.wingedsheep.sdk.scripting.costs.CostAtom
 import kotlin.reflect.KClass
 
 /**
@@ -72,16 +77,28 @@ class CycleCardHandler(
             .firstOrNull { it.searchFilter == null }
             ?: return "This card doesn't have cycling"
 
-        if (action.paymentStrategy is PaymentStrategy.Explicit) {
-            for (sourceId in action.paymentStrategy.manaAbilitiesToActivate) {
-                val sourceContainer = state.getEntity(sourceId)
-                    ?: return "Mana source not found: $sourceId"
-                if (sourceContainer.has<TappedComponent>()) {
-                    return "Mana source is already tapped: $sourceId"
+        val manaCost = manaCostOf(cyclingAbility.cost)
+        val lifeCost = payLifeAmountOf(cyclingAbility.cost)
+        when {
+            manaCost != null -> {
+                if (action.paymentStrategy is PaymentStrategy.Explicit) {
+                    for (sourceId in action.paymentStrategy.manaAbilitiesToActivate) {
+                        val sourceContainer = state.getEntity(sourceId)
+                            ?: return "Mana source not found: $sourceId"
+                        if (sourceContainer.has<TappedComponent>()) {
+                            return "Mana source is already tapped: $sourceId"
+                        }
+                    }
+                } else if (!manaSolver.canPay(state, action.playerId, manaCost)) {
+                    return "Not enough mana to cycle this card"
                 }
             }
-        } else if (!manaSolver.canPay(state, action.playerId, cyclingAbility.cost)) {
-            return "Not enough mana to cycle this card"
+            lifeCost != null -> {
+                if (state.lifeTotal(action.playerId) < lifeCost) {
+                    return "Not enough life to cycle this card"
+                }
+            }
+            else -> return "Unsupported cycling cost"
         }
 
         return null
@@ -105,86 +122,99 @@ class CycleCardHandler(
         val events = mutableListOf<GameEvent>()
         val ownerId = cardComponent.ownerId ?: action.playerId
 
-        // Pay the cycling cost - use floating mana first, then tap lands
-        val poolComponent = currentState.getEntity(action.playerId)?.get<ManaPoolComponent>()
-            ?: ManaPoolComponent()
-        val pool = ManaPool(
-            white = poolComponent.white,
-            blue = poolComponent.blue,
-            black = poolComponent.black,
-            red = poolComponent.red,
-            green = poolComponent.green,
-            colorless = poolComponent.colorless
-        )
+        val manaCost = manaCostOf(cyclingAbility.cost)
+        val lifeCost = payLifeAmountOf(cyclingAbility.cost)
 
-        val partialResult = pool.payPartial(cyclingAbility.cost)
-        val poolAfterPayment = partialResult.newPool
-        val remainingCost = partialResult.remainingCost
-        val manaSpentFromPool = partialResult.manaSpent
-
-        var whiteSpent = manaSpentFromPool.white
-        var blueSpent = manaSpentFromPool.blue
-        var blackSpent = manaSpentFromPool.black
-        var redSpent = manaSpentFromPool.red
-        var greenSpent = manaSpentFromPool.green
-        var colorlessSpent = manaSpentFromPool.colorless
-
-        currentState = currentState.updateEntity(action.playerId) { c ->
-            c.with(
-                ManaPoolComponent(
-                    white = poolAfterPayment.white,
-                    blue = poolAfterPayment.blue,
-                    black = poolAfterPayment.black,
-                    red = poolAfterPayment.red,
-                    green = poolAfterPayment.green,
-                    colorless = poolAfterPayment.colorless
-                )
+        if (manaCost != null) {
+            // Pay the cycling cost - use floating mana first, then tap lands
+            val poolComponent = currentState.getEntity(action.playerId)?.get<ManaPoolComponent>()
+                ?: ManaPoolComponent()
+            val pool = ManaPool(
+                white = poolComponent.white,
+                blue = poolComponent.blue,
+                black = poolComponent.black,
+                red = poolComponent.red,
+                green = poolComponent.green,
+                colorless = poolComponent.colorless
             )
-        }
 
-        // Tap lands for remaining cost
-        if (!remainingCost.isEmpty()) {
-            if (action.paymentStrategy is PaymentStrategy.Explicit) {
-                // Tap specified sources explicitly
-                for (sourceId in action.paymentStrategy.manaAbilitiesToActivate) {
-                    val (tappedState, tapEvent) = tap(currentState, sourceId)
-                    currentState = tappedState
-                    tapEvent?.let(events::add)
-                }
-            } else {
-                val solution = manaSolver.solve(currentState, action.playerId, remainingCost, 0)
-                    ?: return ExecutionResult.error(state, "Not enough mana to cycle")
+            val partialResult = pool.payPartial(manaCost)
+            val poolAfterPayment = partialResult.newPool
+            val remainingCost = partialResult.remainingCost
+            val manaSpentFromPool = partialResult.manaSpent
 
-                val (stateAfterTaps, tapEvents) = manaAbilitySideEffectExecutor
-                    .tapSourcesWithSideEffects(currentState, solution, action.playerId)
-                currentState = stateAfterTaps
-                events.addAll(tapEvents)
+            var whiteSpent = manaSpentFromPool.white
+            var blueSpent = manaSpentFromPool.blue
+            var blackSpent = manaSpentFromPool.black
+            var redSpent = manaSpentFromPool.red
+            var greenSpent = manaSpentFromPool.green
+            var colorlessSpent = manaSpentFromPool.colorless
 
-                for ((_, production) in solution.manaProduced) {
-                    when (production.color) {
-                        Color.WHITE -> whiteSpent++
-                        Color.BLUE -> blueSpent++
-                        Color.BLACK -> blackSpent++
-                        Color.RED -> redSpent++
-                        Color.GREEN -> greenSpent++
-                        null -> colorlessSpent += production.colorless
+            currentState = currentState.updateEntity(action.playerId) { c ->
+                c.with(
+                    ManaPoolComponent(
+                        white = poolAfterPayment.white,
+                        blue = poolAfterPayment.blue,
+                        black = poolAfterPayment.black,
+                        red = poolAfterPayment.red,
+                        green = poolAfterPayment.green,
+                        colorless = poolAfterPayment.colorless
+                    )
+                )
+            }
+
+            // Tap lands for remaining cost
+            if (!remainingCost.isEmpty()) {
+                if (action.paymentStrategy is PaymentStrategy.Explicit) {
+                    // Tap specified sources explicitly
+                    for (sourceId in action.paymentStrategy.manaAbilitiesToActivate) {
+                        val (tappedState, tapEvent) = tap(currentState, sourceId)
+                        currentState = tappedState
+                        tapEvent?.let(events::add)
+                    }
+                } else {
+                    val solution = manaSolver.solve(currentState, action.playerId, remainingCost, 0)
+                        ?: return ExecutionResult.error(state, "Not enough mana to cycle")
+
+                    val (stateAfterTaps, tapEvents) = manaAbilitySideEffectExecutor
+                        .tapSourcesWithSideEffects(currentState, solution, action.playerId)
+                    currentState = stateAfterTaps
+                    events.addAll(tapEvents)
+
+                    for ((_, production) in solution.manaProduced) {
+                        when (production.color) {
+                            Color.WHITE -> whiteSpent++
+                            Color.BLUE -> blueSpent++
+                            Color.BLACK -> blackSpent++
+                            Color.RED -> redSpent++
+                            Color.GREEN -> greenSpent++
+                            null -> colorlessSpent += production.colorless
+                        }
                     }
                 }
             }
-        }
 
-        events.add(
-            ManaSpentEvent(
-                playerId = action.playerId,
-                reason = "Cycle ${cardComponent.name}",
-                white = whiteSpent,
-                blue = blueSpent,
-                black = blackSpent,
-                red = redSpent,
-                green = greenSpent,
-                colorless = colorlessSpent
+            events.add(
+                ManaSpentEvent(
+                    playerId = action.playerId,
+                    reason = "Cycle ${cardComponent.name}",
+                    white = whiteSpent,
+                    blue = blueSpent,
+                    black = blackSpent,
+                    red = redSpent,
+                    green = greenSpent,
+                    colorless = colorlessSpent
+                )
             )
-        )
+        } else if (lifeCost != null) {
+            val (stateAfterPayment, lifeEvent) = DamageUtils.loseLife(
+                currentState, action.playerId, lifeCost, LifeChangeReason.PAYMENT
+            )
+            currentState = stateAfterPayment
+            lifeEvent?.let(events::add)
+        } else {
+            return ExecutionResult.error(state, "Unsupported cycling cost")
+        }
 
         // Discard the card (move from hand to graveyard)
         val handZone = ZoneKey(action.playerId, Zone.HAND)
@@ -279,6 +309,14 @@ class CycleCardHandler(
         }
         return false
     }
+
+    /** Every printed mana-cost cycling ability is a bare [CostAtom.Mana] atom (e.g. "Cycling {2}"). */
+    private fun manaCostOf(cost: AbilityCost): ManaCost? =
+        (cost as? AbilityCost.Atom)?.atom?.let { it as? CostAtom.Mana }?.cost
+
+    /** Life-paid cycling (Street Wraith: "Cycling—Pay 2 life") is a bare [CostAtom.PayLife] atom. */
+    private fun payLifeAmountOf(cost: AbilityCost): Int? =
+        (cost as? AbilityCost.Atom)?.atom?.let { it as? CostAtom.PayLife }?.amount
 
     companion object {
         fun create(services: EngineServices): CycleCardHandler {
