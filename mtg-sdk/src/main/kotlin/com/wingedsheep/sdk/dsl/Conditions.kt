@@ -22,6 +22,7 @@ import com.wingedsheep.sdk.scripting.conditions.NoManaSpentToCast as NoManaSpent
 import com.wingedsheep.sdk.scripting.conditions.NoManaSpentToCastEntered as NoManaSpentToCastEnteredCondition
 import com.wingedsheep.sdk.scripting.conditions.WasCastFromHand as WasCastFromHandCondition
 import com.wingedsheep.sdk.scripting.conditions.WasCastFromZone as WasCastFromZoneCondition
+import com.wingedsheep.sdk.scripting.conditions.SourceInZone as SourceInZoneCondition
 import com.wingedsheep.sdk.scripting.conditions.WasKicked as WasKickedCondition
 import com.wingedsheep.sdk.scripting.conditions.BlightWasPaid as BlightWasPaidCondition
 import com.wingedsheep.sdk.scripting.conditions.WaterbendWasPaid as WaterbendWasPaidCondition
@@ -789,6 +790,16 @@ object Conditions {
      */
     val WasCastFromGraveyard: ConditionInterface =
         WasCastFromZoneCondition(Zone.GRAVEYARD)
+
+    /**
+     * If this card is currently in [zone] — the resolution-time recheck a graveyard-functioning
+     * (or other non-battlefield-functioning) triggered ability needs when its own oracle text adds
+     * an explicit "if this card is in your graveyard" clause (CR 603.4a). See
+     * [com.wingedsheep.sdk.scripting.conditions.SourceInZone] for why `triggerZone` alone isn't
+     * enough and the `Gate.WhenCondition` wiring this pairs with.
+     */
+    fun SourceInZone(zone: Zone): ConditionInterface =
+        SourceInZoneCondition(zone)
 
     /**
      * If this spell was kicked.

@@ -3078,7 +3078,17 @@ work for abilities-on-stack (which carry no `CardComponent`).
 
 ## 8. Triggered abilities (`Triggers.*`)
 
-`triggeredAbility { trigger; effect; target?; triggerCondition?; optional?; elseEffect?; checkOnNextState?; dealsDamageBeforeResolve?; controlledByTriggeringEntityController?; oncePerTurn?; triggersOnce? }`.
+`triggeredAbility { trigger; effect; target?; triggerCondition?; triggerZone?; optional?; elseEffect?; checkOnNextState?; dealsDamageBeforeResolve?; controlledByTriggeringEntityController?; oncePerTurn?; triggersOnce? }`.
+
+**`triggerZone`** — the ability functions only while its source sits in this zone instead of the
+default (battlefield). Set it to `Zone.GRAVEYARD` for a card whose ability is explicitly printed to
+work from the graveyard (CR 112.6a) — Killian's Confidence ("Whenever one or more creatures you
+control deal combat damage to a player, you may pay …") and Bridge from Below both use it. Detection
+scans that zone's cards for matching abilities the same way it scans the battlefield; it does **not**
+by itself re-validate at resolution that the source is *still* there — a card whose printed text adds
+its own "if this card is in your graveyard" clause needs that modeled separately via
+`Conditions.SourceInZone` (see §12), since a triggered ability, once on the stack, otherwise resolves
+independent of its source's current location (CR 112.7a).
 
 **`oncePerTurn` vs `triggersOnce` — two firing caps.** `oncePerTurn = true` caps the ability to one
 fire per turn ("This ability triggers only once each turn", e.g. Scavenger's Talent), tracked by a
@@ -5977,6 +5987,18 @@ answer it and would silently return `false`.
   entering creature — Leonardo, Sewer Samurai ("creatures you cast from your graveyard enter with a
   finality counter") and Mikey & Don ("creatures you cast from the top of your library enter with an
   extra +1/+1 counter", `WasCastFromZone(Zone.LIBRARY)`).
+- `SourceInZone(zone)` — is the ability's source *currently* in `zone`? Resolution-only. The CR
+  603.4a resolution-time recheck a graveyard-functioning (or other non-battlefield-functioning)
+  triggered ability needs when its own oracle text adds an explicit "if this card is in your
+  graveyard" clause — `triggerZone` (below) only gates *detection*, and nothing re-validates a
+  triggered ability's source once it's on the stack (CR 112.7a), so an explicit clause is a real
+  second check, not restated text. Compose it with `Gate.WhenCondition(Conditions.SourceInZone(Zone.GRAVEYARD))`
+  wrapping the payoff (no `otherwise` — the printed text has none, so nothing happens if the source
+  already left). `Gate.MayDecide.sourceRequiredZone` is the sibling for *optional* "may" payoffs;
+  this is for mandatory ones. Motivating case: **Bridge from Below** — two graveyard-triggered
+  abilities where one exiles the source, so which resolves first (this engine has no "choose
+  simultaneous trigger order" decision yet, so in practice: whichever the detector queues first)
+  determines whether the other still finds it there.
 - `WasKicked` — cast with kicker / multikicker / offspring (i.e. an `OptionalAdditionalCost` with `branchesEffect = true` whose extra cost was paid). FlashKicker payments are intentionally invisible to this condition.
 - `WasBargained` — the spell's **bargain** additional cost was declared as it was cast (CR 702.166b, Wilds of Eldraine). A facade over `CastChoiceMade(ChoiceSlot.BARGAINED)`, so bargain needs no condition type of its own. Reads the durable flag on a resolved permanent (an "if it was bargained" enters trigger) *and* the declaration carried on a still-on-the-stack spell (an "if this spell was bargained" rider), and is also the condition a `CostGating.OnlyIf` cost reduction gates on. Never true for a merely kicked spell.
 - `SneakCostWasPaid` — the source was cast for its `Sneak` cost (CR 702.190 — mana + returning an unblocked attacker). Reads the durable `ChoiceSlot.SNEAK` flag on a resolved permanent, falling back to the resolution context for a non-permanent spell's own effect. Backs riders like Leonardo, Leader in Blue and The Last Ronin's Technique.

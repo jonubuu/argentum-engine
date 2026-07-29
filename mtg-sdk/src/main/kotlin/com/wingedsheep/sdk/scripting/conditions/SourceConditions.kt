@@ -216,6 +216,36 @@ data class WasCastFromZone(val zone: Zone) : Condition {
 }
 
 /**
+ * Condition: "if this card is in your graveyard" — or any other single [zone].
+ *
+ * True iff the ability's source object is *currently* located in [zone] (as any player's, since
+ * only the source's own presence matters — a graveyard-functioning ability's source is scoped to
+ * one owner already). Resolution-only (false under projection): this reads the live board, not a
+ * continuous-effect layer question.
+ *
+ * The re-check this exists for: a [triggerZone][com.wingedsheep.sdk.dsl.CardBuilder.triggerZone]
+ * ("functions only while in the graveyard") gates whether the ability is even *detected*, but
+ * nothing re-validates that gate at *resolution* — a triggered ability, once on the stack, resolves
+ * independent of its source's current location (CR 112.7a) unless the card's own text says
+ * otherwise. Oracle text that adds an explicit "if this card is in your graveyard" clause is
+ * exactly that explicit recheck (CR 603.4a: intervening-if is tested again immediately before
+ * resolution). Wrap the payoff in `GatedEffect(Gate.WhenCondition(SourceInZone(Zone.GRAVEYARD)),
+ * then = …)` — no `otherwise`, since the printed text has none: if the source already left, nothing
+ * happens. Bridge from Below is the motivating case: two graveyard-triggered abilities where one
+ * exiles the source, so which resolves first determines whether the other still finds it there.
+ *
+ * (`Gate.MayDecide.sourceRequiredZone` covers the same recheck for *optional* "may" payoffs — this
+ * condition is for mandatory ones, composed through the general `Gate.WhenCondition` gate instead.)
+ *
+ * @property zone The zone the source must currently occupy for the condition to hold.
+ */
+@SerialName("SourceInZone")
+@Serializable
+data class SourceInZone(val zone: Zone) : Condition {
+    override val description: String = "this card is in your ${zone.displayName.lowercase()}"
+}
+
+/**
  * Condition: "If this spell was kicked"
  * Used for kicker spells like Shivan Fire where the effect changes based on
  * whether the kicker cost was paid.

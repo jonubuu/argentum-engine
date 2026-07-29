@@ -90,6 +90,7 @@ import com.wingedsheep.sdk.scripting.ChoiceSlot
 import com.wingedsheep.sdk.scripting.conditions.WasCast
 import com.wingedsheep.sdk.scripting.conditions.WasCastFromHand
 import com.wingedsheep.sdk.scripting.conditions.WasCastFromZone
+import com.wingedsheep.sdk.scripting.conditions.SourceInZone
 import com.wingedsheep.engine.state.components.battlefield.CastFromGraveyardComponent
 import com.wingedsheep.engine.state.components.battlefield.CastFromLibraryComponent
 import com.wingedsheep.sdk.scripting.conditions.SacrificedPermanentHadSubtype
@@ -457,6 +458,7 @@ class ConditionEvaluator(
             is WasCast -> ifResolution { evaluateWasCast(state, it) }
             is WasCastFromHand -> ifResolution { evaluateWasCastFromHand(state, it) }
             is WasCastFromZone -> ifResolution { evaluateWasCastFromZone(state, condition, it) }
+            is SourceInZone -> ifResolution { evaluateSourceInZone(state, condition, it) }
             is WasKicked -> ifResolution { evaluateWasKicked(state, it) }
             is SneakCostWasPaid -> ifResolution { evaluateSneakCostWasPaid(state, it) }
             is WebSlungCostWasPaid -> ifResolution { evaluateWebSlungCostWasPaid(state, it) }
@@ -1083,6 +1085,19 @@ class ConditionEvaluator(
             Zone.LIBRARY -> entity.has<CastFromLibraryComponent>()
             else -> false
         }
+    }
+
+    /**
+     * "This card is in your [zone]" — is the ability's source *currently* located in [condition.zone]?
+     * Every zone here is owner-keyed (hand/library/graveyard/exile/battlefield all live under
+     * `ZoneKey(ownerId, zone)` in this engine), so resolving the source's owner and checking that one
+     * zone list is sufficient — no need to scan every zone the way `Gate.MayDecide.sourceRequiredZone`
+     * does, since that call site doesn't have a resolved owner in hand.
+     */
+    private fun evaluateSourceInZone(state: GameState, condition: SourceInZone, context: EffectContext): Boolean {
+        val sourceId = context.sourceId ?: return false
+        val ownerId = state.getEntity(sourceId)?.get<CardComponent>()?.ownerId ?: return false
+        return state.getZone(ownerId, condition.zone).contains(sourceId)
     }
 
     /**
