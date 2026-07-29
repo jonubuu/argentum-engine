@@ -1,0 +1,30 @@
+{
+  "_description": "Thraben Charm (MH3, {1}{W} instant) mode 3: 'Exile any number of target players' graveyards.' Alice casts it choosing that mode and targets BOTH herself and Bob with the single unlimited TargetPlayer requirement. Alice's graveyard holds two cards (Grizzly Bears, Shock); Bob's graveyard holds a different card (Bull Hippo). The effect is a ForEachTargetEffect that iterates each targeted player and, per iteration, gathers that specific player's own graveyard (Player.ContextPlayer(0)) before exiling it. Verify: (1) after resolution Alice's graveyard is empty and both her cards are now in exile, (2) Bob's graveyard is ALSO empty and his card is in exile too, (3) no card ends up in the wrong player's exile/graveyard — each player's pile stays scoped to that player, not merged into one shared pile or only applied to one side.",
+  "player1Name": "Alice",
+  "player2Name": "Bob",
+  "player1": {
+    "lifeTotal": 20,
+    "hand": ["Thraben Charm"],
+    "battlefield": [
+      {"name": "Plains"},
+      {"name": "Plains"}
+    ],
+    "graveyard": ["Grizzly Bears", "Shock"],
+    "library": ["Plains", "Plains"]
+  },
+  "player2": {
+    "lifeTotal": 20,
+    "hand": [],
+    "battlefield": [],
+    "graveyard": ["Bull Hippo"],
+    "library": ["Forest", "Forest"]
+  },
+  "phase": "PRECOMBAT_MAIN",
+  "step": "PRECOMBAT_MAIN",
+  "activePlayer": 1,
+  "priorityPlayer": 1,
+  "player1StopAtSteps": [],
+  "player2StopAtSteps": [],
+  "player1OpponentStopAtSteps": [],
+  "player2OpponentStopAtSteps": []
+}
