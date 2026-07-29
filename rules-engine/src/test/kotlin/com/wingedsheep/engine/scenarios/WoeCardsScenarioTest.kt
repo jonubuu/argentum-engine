@@ -61,7 +61,7 @@ class WoeCardsScenarioTest : ScenarioTestBase() {
 
                 val opponentLife = game.getLifeTotal(2)
                 game.castSpell(1, "Hopeless Nightmare").error shouldBe null
-                game.resolveStack()
+                game.resolveStackAutoOrder()
 
                 withClue("the opponent's only card should have been discarded") {
                     game.handSize(2) shouldBe 0
@@ -88,7 +88,7 @@ class WoeCardsScenarioTest : ScenarioTestBase() {
                         abilityId = nightmareSacrificeAbility
                     )
                 ).error shouldBe null
-                game.resolveStack()
+                game.resolveStackAutoOrder()
 
                 withClue("the sacrifice is the ability's effect, so it goes to the graveyard") {
                     game.isInGraveyard(1, "Hopeless Nightmare") shouldBe true
@@ -112,7 +112,7 @@ class WoeCardsScenarioTest : ScenarioTestBase() {
 
                 val spearguard = game.findPermanent("Harried Spearguard")!!
                 game.castSpell(1, "Shock", targetId = spearguard).error shouldBe null
-                game.resolveStack()
+                game.resolveStackAutoOrder()
 
                 game.isInGraveyard(1, "Harried Spearguard") shouldBe true
                 val rat = game.findPermanent("Rat Token")
@@ -146,7 +146,7 @@ class WoeCardsScenarioTest : ScenarioTestBase() {
                         abilityId = nightmareSacrificeAbility
                     )
                 ).error shouldBe null
-                game.resolveStack()
+                game.resolveStackAutoOrder()
 
                 withClue("sacrificing the enchantment should feed the Tabby's trigger") {
                     game.findPermanent("Rat Token") shouldNotBe null
@@ -169,7 +169,7 @@ class WoeCardsScenarioTest : ScenarioTestBase() {
                         abilityId = tabbyDeathtouchAbility
                     )
                 ).error shouldBe null
-                game.resolveStack()
+                game.resolveStackAutoOrder()
 
                 projector.project(game.state).hasKeyword(tabby, Keyword.DEATHTOUCH) shouldBe true
             }
@@ -190,12 +190,12 @@ class WoeCardsScenarioTest : ScenarioTestBase() {
                     .build()
 
                 game.castSpellTargetingPlayer(1, "Ego Drain", targetPlayerNumber = 2).error shouldBe null
-                game.resolveStack()
+                game.resolveStackAutoOrder()
 
                 // Choose the opponent's only nonland card — Forest is filtered out of the choice.
                 game.hasPendingDecision() shouldBe true
                 game.selectCards(game.findCardsInHand(2, "Shock")).error shouldBe null
-                game.resolveStack()
+                game.resolveStackAutoOrder()
 
                 withClue("the chosen nonland card is discarded, the land stays") {
                     game.isInGraveyard(2, "Shock") shouldBe true
@@ -205,7 +205,7 @@ class WoeCardsScenarioTest : ScenarioTestBase() {
                 // Then the Faerie rider: you control no Faerie, so exile a card from your hand.
                 game.hasPendingDecision() shouldBe true
                 game.selectCards(game.findCardsInHand(1, "Grizzly Bears")).error shouldBe null
-                game.resolveStack()
+                game.resolveStackAutoOrder()
 
                 withClue("no Faerie → the rider exiles a card from your hand") {
                     game.isInExile(1, "Grizzly Bears") shouldBe true
@@ -225,10 +225,10 @@ class WoeCardsScenarioTest : ScenarioTestBase() {
                     .build()
 
                 game.castSpellTargetingPlayer(1, "Ego Drain", targetPlayerNumber = 2).error shouldBe null
-                game.resolveStack()
+                game.resolveStackAutoOrder()
                 game.hasPendingDecision() shouldBe true
                 game.selectCards(game.findCardsInHand(2, "Shock")).error shouldBe null
-                game.resolveStack()
+                game.resolveStackAutoOrder()
 
                 withClue("the strip half still happens") {
                     game.isInGraveyard(2, "Shock") shouldBe true
@@ -258,14 +258,14 @@ class WoeCardsScenarioTest : ScenarioTestBase() {
 
                 val librarySizeBefore = game.librarySize(1)
                 game.castSpell(1, "Commune with Nature").error shouldBe null
-                game.resolveStack()
+                game.resolveStackAutoOrder()
 
                 val bears = game.findCardsInLibrary(1, "Grizzly Bears")
                 withClue("the only creature among the five should be selectable") {
                     bears shouldNotBe emptyList<Any>()
                 }
                 game.selectCards(bears).error shouldBe null
-                game.resolveStack()
+                game.resolveStackAutoOrder()
 
                 game.isInHand(1, "Grizzly Bears") shouldBe true
                 withClue("the other four go to the bottom — only the taken card leaves the library") {
@@ -288,10 +288,10 @@ class WoeCardsScenarioTest : ScenarioTestBase() {
 
                 val librarySizeBefore = game.librarySize(1)
                 game.castSpell(1, "Commune with Nature").error shouldBe null
-                game.resolveStack()
+                game.resolveStackAutoOrder()
 
                 game.skipSelection().error shouldBe null
-                game.resolveStack()
+                game.resolveStackAutoOrder()
 
                 withClue("\"you may reveal\" — declining is legal even with a creature among them") {
                     game.isInHand(1, "Grizzly Bears") shouldBe false
@@ -313,7 +313,7 @@ class WoeCardsScenarioTest : ScenarioTestBase() {
 
                 val bears = game.findPermanent("Grizzly Bears")!!
                 game.castSpell(1, "Rat Out", targetId = bears).error shouldBe null
-                game.resolveStack()
+                game.resolveStackAutoOrder()
 
                 val projected = projector.project(game.state)
                 withClue("2/2 Grizzly Bears takes -1/-1") {
@@ -335,7 +335,7 @@ class WoeCardsScenarioTest : ScenarioTestBase() {
 
                 // "Up to one target" — casting with no target is legal.
                 game.castSpell(1, "Rat Out").error shouldBe null
-                game.resolveStack()
+                game.resolveStackAutoOrder()
 
                 game.findPermanent("Rat Token") shouldNotBe null
             }
@@ -352,7 +352,7 @@ class WoeCardsScenarioTest : ScenarioTestBase() {
                     .build()
 
                 game.castSpell(1, "Cursed Courtier").error shouldBe null
-                game.resolveStack()
+                game.resolveStackAutoOrder()
 
                 val courtier = game.findPermanent("Cursed Courtier")!!
                 withClue("the ETB should have created a Cursed Role") {
@@ -378,7 +378,7 @@ class WoeCardsScenarioTest : ScenarioTestBase() {
                     .build()
 
                 game.castSpell(1, "Voracious Vermin").error shouldBe null
-                game.resolveStack()
+                game.resolveStackAutoOrder()
 
                 game.findPermanent("Rat Token") shouldNotBe null
             }
@@ -396,7 +396,7 @@ class WoeCardsScenarioTest : ScenarioTestBase() {
                 val vermin = game.findPermanent("Voracious Vermin")!!
                 val bears = game.findPermanent("Grizzly Bears")!!
                 game.castSpell(1, "Shock", targetId = bears).error shouldBe null
-                game.resolveStack()
+                game.resolveStackAutoOrder()
 
                 withClue("Shock kills the other creature you control") {
                     game.isInGraveyard(1, "Grizzly Bears") shouldBe true
@@ -429,7 +429,7 @@ class WoeCardsScenarioTest : ScenarioTestBase() {
                         abilityId = nightmareSacrificeAbility
                     )
                 ).error shouldBe null
-                game.resolveStack()
+                game.resolveStackAutoOrder()
 
                 withClue("sacrificing the enchantment feeds Wicked Visitor's drain") {
                     game.getLifeTotal(2) shouldBe opponentLife - 1
@@ -456,7 +456,7 @@ class WoeCardsScenarioTest : ScenarioTestBase() {
                         abilityId = nightmareSacrificeAbility
                     )
                 ).error shouldBe null
-                game.resolveStack()
+                game.resolveStackAutoOrder()
 
                 val bird = game.findPermanent("Bird Token")
                 withClue("sacrificing the enchantment should feed the Knight's trigger") {
@@ -483,7 +483,7 @@ class WoeCardsScenarioTest : ScenarioTestBase() {
                     .build()
 
                 game.castSpell(1, "Gnawing Crescendo").error shouldBe null
-                game.resolveStack()
+                game.resolveStackAutoOrder()
 
                 val bears = game.findPermanent("Grizzly Bears")!!
                 val projected = projector.project(game.state)
@@ -504,7 +504,7 @@ class WoeCardsScenarioTest : ScenarioTestBase() {
                     .build()
 
                 game.castSpell(1, "Gnawing Crescendo").error shouldBe null
-                game.resolveStack()
+                game.resolveStackAutoOrder()
 
                 withClue("no creature has died yet, so no Rat") {
                     game.findPermanent("Rat Token") shouldBe null
@@ -513,7 +513,7 @@ class WoeCardsScenarioTest : ScenarioTestBase() {
                 // +2/+0 leaves Grizzly Bears at 4/2, so Shock's 2 damage is still lethal.
                 val bears = game.findPermanent("Grizzly Bears")!!
                 game.castSpell(1, "Shock", targetId = bears).error shouldBe null
-                game.resolveStack()
+                game.resolveStackAutoOrder()
 
                 withClue("the death this turn fires the delayed trigger → a Rat token") {
                     game.isInGraveyard(1, "Grizzly Bears") shouldBe true
@@ -544,7 +544,7 @@ class WoeCardsScenarioTest : ScenarioTestBase() {
                         abilityId = animateAbility("Restless Bivouac")
                     )
                 ).error shouldBe null
-                game.resolveStack()
+                game.resolveStackAutoOrder()
 
                 val animated = projector.project(game.state)
                 withClue("{1}{R}{W} makes it a 2/2 that is still a land") {
@@ -561,7 +561,7 @@ class WoeCardsScenarioTest : ScenarioTestBase() {
                     game.hasPendingDecision() shouldBe true
                 }
                 game.selectTargets(listOf(bears)).error shouldBe null
-                game.resolveStack()
+                game.resolveStackAutoOrder()
 
                 val counters = game.state.getEntity(bears)?.get<CountersComponent>()
                 withClue("Grizzly Bears should carry exactly one +1/+1 counter") {
@@ -589,7 +589,7 @@ class WoeCardsScenarioTest : ScenarioTestBase() {
                         abilityId = animateAbility("Restless Fortress")
                     )
                 ).error shouldBe null
-                game.resolveStack()
+                game.resolveStackAutoOrder()
 
                 val animated = projector.project(game.state)
                 withClue("{2}{W}{B} makes it a 1/4") {
@@ -603,7 +603,7 @@ class WoeCardsScenarioTest : ScenarioTestBase() {
 
                 game.passUntilPhase(Phase.COMBAT, Step.DECLARE_ATTACKERS)
                 game.declareAttackers(mapOf("Restless Fortress" to 2)).error shouldBe null
-                game.resolveStack()
+                game.resolveStackAutoOrder()
 
                 withClue("the attack trigger drains before combat damage is dealt") {
                     game.getLifeTotal(2) shouldBe theirLife - 2

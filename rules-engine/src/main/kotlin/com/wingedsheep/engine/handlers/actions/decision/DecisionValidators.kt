@@ -27,6 +27,7 @@ import com.wingedsheep.engine.core.ModesChosenResponse
 import com.wingedsheep.engine.core.NumberChosenResponse
 import com.wingedsheep.engine.core.OptionChosenResponse
 import com.wingedsheep.engine.core.OrderObjectsDecision
+import com.wingedsheep.engine.core.OrderTriggersDecision
 import com.wingedsheep.engine.core.OrderedResponse
 import com.wingedsheep.engine.core.PendingDecision
 import com.wingedsheep.engine.core.PilesSplitResponse
@@ -37,6 +38,7 @@ import com.wingedsheep.engine.core.SelectManaSourcesDecision
 import com.wingedsheep.engine.core.ManaSourcesSelectedResponse
 import com.wingedsheep.engine.core.SplitPilesDecision
 import com.wingedsheep.engine.core.TargetsResponse
+import com.wingedsheep.engine.core.TriggersOrderedResponse
 import com.wingedsheep.engine.core.YesNoDecision
 import com.wingedsheep.engine.core.YesNoResponse
 import com.wingedsheep.engine.state.GameState
@@ -79,6 +81,7 @@ object DecisionValidators {
             is ReorderLibraryDecision -> validateLibraryReorder(decision, response)
             is SelectManaSourcesDecision -> validateManaSourcesSelection(response)
             is BatchYesNoDecision -> validateBatchYesNo(response)
+            is OrderTriggersDecision -> validateOrderTriggers(decision, response)
         }
     }
 
@@ -354,6 +357,17 @@ object DecisionValidators {
         }
         if (response.orderedObjects.toSet() != decision.objects.toSet()) {
             return "Ordered objects must contain exactly the same objects as the decision"
+        }
+        return null
+    }
+
+    private fun validateOrderTriggers(decision: OrderTriggersDecision, response: DecisionResponse): String? {
+        if (response !is TriggersOrderedResponse) {
+            return "Expected trigger-order response"
+        }
+        val expected = decision.triggers.indices.toSet()
+        if (response.order.size != decision.triggers.size || response.order.toSet() != expected) {
+            return "Order must be a permutation of all ${decision.triggers.size} trigger indices"
         }
         return null
     }

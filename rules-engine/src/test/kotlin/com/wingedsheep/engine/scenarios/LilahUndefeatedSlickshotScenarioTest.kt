@@ -39,7 +39,7 @@ class LilahUndefeatedSlickshotScenarioTest : ScenarioTestBase() {
             withClue("Casting Lightning Helix should succeed: ${result.error}") {
                 result.error shouldBe null
             }
-            game.resolveStack()
+            game.resolveStackAutoOrder()
 
             withClue("Lightning Helix resolved normally first (3 damage to Player2)") {
                 game.getLifeTotal(2) shouldBe 17
@@ -70,7 +70,7 @@ class LilahUndefeatedSlickshotScenarioTest : ScenarioTestBase() {
             val lilah = game.findPermanent("Lilah, Undefeated Slickshot")!!
             game.castSpellTargetingPlayer(1, "Lightning Helix", targetPlayerNumber = 2).error shouldBe null
             // Resolve the prowess trigger and the spell; the +1/+1 lasts until end of turn.
-            game.resolveStack()
+            game.resolveStackAutoOrder()
 
             withClue("Prowess: Lilah is 4/4 until end of turn after a noncreature cast") {
                 game.state.projectedState.getPower(lilah) shouldBe 4
@@ -89,7 +89,7 @@ class LilahUndefeatedSlickshotScenarioTest : ScenarioTestBase() {
                 .build()
 
             game.castSpellTargetingPlayer(1, "Volcanic Hammer", targetPlayerNumber = 2).error shouldBe null
-            game.resolveStack()
+            game.resolveStackAutoOrder()
 
             withClue("Monocolored spell doesn't trigger Lilah — it goes to the graveyard normally") {
                 namesInGraveyard(game, 1) shouldBe setOf("Volcanic Hammer")

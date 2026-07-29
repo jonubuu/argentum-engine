@@ -3,7 +3,9 @@ package com.wingedsheep.engine.scenarios
 import com.wingedsheep.engine.core.CastSpell
 import com.wingedsheep.engine.core.ChooseColorDecision
 import com.wingedsheep.engine.core.ColorChosenResponse
+import com.wingedsheep.engine.core.OrderTriggersDecision
 import com.wingedsheep.engine.core.PaymentStrategy
+import com.wingedsheep.engine.core.TriggersOrderedResponse
 import com.wingedsheep.engine.core.YesNoResponse
 import com.wingedsheep.engine.legalactions.EnumerationMode
 import com.wingedsheep.engine.legalactions.LegalActionEnumerator
@@ -133,6 +135,11 @@ private fun GameTestDriver.drainDecisionsChoosingRed(player: EntityId) {
         when {
             decision is ChooseColorDecision ->
                 submitDecision(player, ColorChosenResponse(decision.id, Color.RED))
+            // Ashling's two first-main triggers are different abilities on the same source and
+            // controller, firing at once — CR 603.3b now asks Player to order them; the order
+            // doesn't matter here, keep the default (reproduces the pre-feature processing order).
+            decision is OrderTriggersDecision ->
+                submitDecision(player, TriggersOrderedResponse(decision.id, decision.triggers.indices.reversed().toList()))
             decision != null -> declinePendingDecision(player)
             else -> passPriority(priorityPlayer ?: player)
         }

@@ -264,6 +264,39 @@ data class BatchYesNoDecision(
 ) : PendingDecision
 
 /**
+ * A single triggered ability the controller is ordering among ≥ 2 that triggered at the same time
+ * (CR 603.3b). [description] is that ability's own rules text, so two abilities sharing one
+ * [sourceId] (e.g. Bridge from Below's token-creation and exile abilities) are still distinguishable.
+ */
+@Serializable
+data class TriggerOrderOption(
+    val sourceId: EntityId,
+    val sourceName: String,
+    val description: String
+)
+
+/**
+ * CR 603.3b: when a player controls two or more triggered abilities that triggered since they last
+ * received priority, that player — not the engine — chooses the order those abilities go on the
+ * stack. [triggers] lists them in an arbitrary (detection-order) starting arrangement; the response
+ * is a permutation naming the *resolution* order the player wants (first entry resolves first).
+ *
+ * Raised only when the tied abilities are genuinely distinguishable — see
+ * [com.wingedsheep.engine.event.TriggerProcessor]'s "uniform batchable run" carve-out, which skips
+ * this prompt for a run of structurally identical optional triggers (order among interchangeable
+ * instances is moot, and the existing [BatchYesNoDecision] already covers that case with one prompt).
+ */
+@Serializable
+@SerialName("OrderTriggersDecision")
+data class OrderTriggersDecision(
+    override val id: String,
+    override val playerId: EntityId,
+    override val prompt: String,
+    override val context: DecisionContext,
+    val triggers: List<TriggerOrderOption>
+) : PendingDecision
+
+/**
  * Player must choose from multiple modes (modal spells like Cryptic Command).
  *
  * @property modes Available modes with descriptions
@@ -622,6 +655,7 @@ sealed interface DecisionResponse {
         is NumberChosenResponse -> copy(decisionId = newId)
         is DistributionResponse -> copy(decisionId = newId)
         is OrderedResponse -> copy(decisionId = newId)
+        is TriggersOrderedResponse -> copy(decisionId = newId)
         is PilesSplitResponse -> copy(decisionId = newId)
         is OptionChosenResponse -> copy(decisionId = newId)
         is ReplacementChosenResponse -> copy(decisionId = newId)
@@ -728,6 +762,20 @@ data class DistributionResponse(
 data class OrderedResponse(
     override val decisionId: String,
     val orderedObjects: List<EntityId>
+) : DecisionResponse
+
+/**
+ * Response to [OrderTriggersDecision].
+ *
+ * @property order A permutation of indices into the decision's `triggers` list, in the order the
+ *   controller wants them to *resolve* — `order[0]` resolves first. (The engine reverses this
+ *   internally before pushing onto the stack, since the stack resolves last-pushed-first.)
+ */
+@Serializable
+@SerialName("TriggersOrderedResponse")
+data class TriggersOrderedResponse(
+    override val decisionId: String,
+    val order: List<Int>
 ) : DecisionResponse
 
 /**

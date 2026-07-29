@@ -37,11 +37,11 @@ class MagmakinArtilleristScenarioTest : ScenarioTestBase() {
                     cast.error shouldBe null
                 }
                 if (game.hasPendingDecision()) game.submitManaSourcesAutoPay()
-                game.resolveStack()
+                game.resolveStackAutoOrder()
                 if (game.hasPendingDecision()) {
                     game.selectCards(game.findCardsInHand(1, "Grizzly Bears").take(2))
                 }
-                game.resolveStack()
+                game.resolveStackAutoOrder()
 
                 withClue("One discard event of two cards → \"that much\" is 2") {
                     game.getLifeTotal(2) shouldBe 18
@@ -66,7 +66,7 @@ class MagmakinArtilleristScenarioTest : ScenarioTestBase() {
                 val cycle = game.cycleCard(1, "Chitin Gravestalker")
                 withClue("Cycling should succeed: ${cycle.error}") { cycle.error shouldBe null }
                 if (game.hasPendingDecision()) game.submitManaSourcesAutoPay()
-                game.resolveStack()
+                game.resolveStackAutoOrder()
 
                 withClue("Cycling another card is a one-card discard → 1 damage") {
                     game.getLifeTotal(2) shouldBe 19
@@ -89,7 +89,7 @@ class MagmakinArtilleristScenarioTest : ScenarioTestBase() {
                 val cycle = game.cycleCard(1, "Magmakin Artillerist")
                 withClue("Cycling should succeed: ${cycle.error}") { cycle.error shouldBe null }
                 if (game.hasPendingDecision()) game.submitManaSourcesAutoPay()
-                game.resolveStack()
+                game.resolveStackAutoOrder()
 
                 withClue(
                     "Only the cycle trigger fires — the discard payoff is a battlefield ability " +
@@ -113,7 +113,7 @@ class MagmakinArtilleristScenarioTest : ScenarioTestBase() {
                 val cycle = game.cycleCard(1, "Magmakin Artillerist")
                 withClue("Cycling should succeed: ${cycle.error}") { cycle.error shouldBe null }
                 if (game.hasPendingDecision()) game.submitManaSourcesAutoPay()
-                game.resolveStack()
+                game.resolveStackAutoOrder()
 
                 withClue("1 from the cycled card's own trigger + 1 from the battlefield copy") {
                     game.getLifeTotal(2) shouldBe 18

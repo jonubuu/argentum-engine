@@ -55,7 +55,7 @@ class LaidToRestScenarioTest : ScenarioTestBase() {
 
                 // Lightning Bolt (3) kills the 2/2 Human.
                 game.castSpell(1, "Lightning Bolt", human).error shouldBe null
-                game.resolveStack()
+                game.resolveStackAutoOrder()
 
                 withClue("Human is dead") { game.findPermanent("Glory Seeker") shouldBe null }
                 // Hand: -1 (bolt cast) +1 (Laid to Rest draw) = net unchanged from before-cast.
@@ -81,7 +81,7 @@ class LaidToRestScenarioTest : ScenarioTestBase() {
                 val handBefore = game.handSize(1)
 
                 game.castSpell(1, "Lightning Bolt", bear).error shouldBe null
-                game.resolveStack()
+                game.resolveStackAutoOrder()
 
                 withClue("Bear is dead") { game.findPermanent("Grizzly Bears") shouldBe null }
                 withClue("gained 2 life from the counter-bearing creature dying") {
@@ -111,7 +111,7 @@ class LaidToRestScenarioTest : ScenarioTestBase() {
                 val handBefore = game.handSize(1)
 
                 game.castSpell(1, "Lightning Bolt", human).error shouldBe null
-                game.resolveStack()
+                game.resolveStackAutoOrder()
 
                 withClue("Human is dead") { game.findPermanent("Glory Seeker") shouldBe null }
                 withClue("drew a card (Human died)") { game.handSize(1) shouldBe handBefore }
@@ -137,7 +137,7 @@ class LaidToRestScenarioTest : ScenarioTestBase() {
                 val handBefore = game.handSize(1)
 
                 game.castSpell(1, "Lightning Bolt", oppHuman).error shouldBe null
-                game.resolveStack()
+                game.resolveStackAutoOrder()
 
                 withClue("opponent's Human is dead") { game.findPermanent("Glory Seeker") shouldBe null }
                 // Hand: -1 (bolt), no draw — the dying Human wasn't yours.

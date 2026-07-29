@@ -1,11 +1,13 @@
 package com.wingedsheep.engine.scenarios
 
 import com.wingedsheep.engine.core.CardsSelectedResponse
+import com.wingedsheep.engine.core.OrderTriggersDecision
 import com.wingedsheep.engine.core.OrderedResponse
 import com.wingedsheep.engine.core.ReorderLibraryDecision
 import com.wingedsheep.engine.core.ScriedEvent
 import com.wingedsheep.engine.core.SelectCardsDecision
 import com.wingedsheep.engine.core.SurveiledEvent
+import com.wingedsheep.engine.core.TriggersOrderedResponse
 import com.wingedsheep.engine.state.ZoneKey
 import com.wingedsheep.engine.state.components.battlefield.CountersComponent
 import com.wingedsheep.engine.support.GameTestDriver
@@ -122,9 +124,21 @@ class SurveilTriggerScenarioTest : FunSpec({
         replaceState(state.copy(zones = state.zones + (key to state.getZone(key).take(size))))
     }
 
+    // Two DIFFERENT "whenever you surveil"/"scry or surveil" abilities on the same controller now
+    // pause for a CR 603.3b ordering decision; these tests don't care which fires first, so keep
+    // the engine's pre-feature processing order (see GameTestDriver.autoResolveDecision).
     fun GameTestDriver.resolveStack() {
         var guard = 0
-        while (stackSize > 0 && guard++ < 10) bothPass()
+        while (guard++ < 10 && (stackSize > 0 || pendingDecision != null)) {
+            val decision = pendingDecision as? OrderTriggersDecision
+            if (decision != null) {
+                submitDecision(decision.playerId, TriggersOrderedResponse(decision.id, decision.triggers.indices.reversed().toList()))
+            } else if (stackSize > 0) {
+                bothPass()
+            } else {
+                break
+            }
+        }
     }
 
     // Cast the named scry/surveil spell, then drive all resolution-time decisions:
@@ -168,11 +182,11 @@ class SurveilTriggerScenarioTest : FunSpec({
 
         val watcher = driver.putCreatureOnBattlefield(active, "Surveil Watcher")
         driver.castLook(active, "Surveil One")
-        driver.bothPass()
+        driver.resolveStack()
         driver.plusOneCounters(watcher) shouldBe 1
 
         driver.castLook(active, "Surveil Three")
-        driver.bothPass()
+        driver.resolveStack()
         driver.plusOneCounters(watcher) shouldBe 2
     }
 
@@ -185,11 +199,11 @@ class SurveilTriggerScenarioTest : FunSpec({
         val counter = driver.putCreatureOnBattlefield(active, "Surveil Counter")
 
         driver.castLook(active, "Surveil Three")
-        driver.bothPass()
+        driver.resolveStack()
         driver.plusOneCounters(counter) shouldBe 3
 
         driver.castLook(active, "Surveil One")
-        driver.bothPass()
+        driver.resolveStack()
         driver.plusOneCounters(counter) shouldBe 4
     }
 
@@ -202,11 +216,11 @@ class SurveilTriggerScenarioTest : FunSpec({
         val watcher = driver.putCreatureOnBattlefield(active, "Look Watcher")
 
         driver.castLook(active, "Scry One")
-        driver.bothPass()
+        driver.resolveStack()
         driver.plusOneCounters(watcher) shouldBe 1 // fired on the scry
 
         driver.castLook(active, "Surveil One")
-        driver.bothPass()
+        driver.resolveStack()
         driver.plusOneCounters(watcher) shouldBe 2 // ... and on the surveil
     }
 
@@ -221,13 +235,13 @@ class SurveilTriggerScenarioTest : FunSpec({
 
         // A scry fires only the scry watcher.
         driver.castLook(active, "Scry One")
-        driver.bothPass()
+        driver.resolveStack()
         driver.plusOneCounters(scryWatcher) shouldBe 1
         driver.plusOneCounters(surveilWatcher) shouldBe 0
 
         // A surveil fires only the surveil watcher.
         driver.castLook(active, "Surveil One")
-        driver.bothPass()
+        driver.resolveStack()
         driver.plusOneCounters(surveilWatcher) shouldBe 1
         driver.plusOneCounters(scryWatcher) shouldBe 1 // unchanged
     }
@@ -243,7 +257,7 @@ class SurveilTriggerScenarioTest : FunSpec({
 
         val before = driver.events.size
         driver.castLook(active, "Surveil Three")
-        driver.bothPass()
+        driver.resolveStack()
 
         val surveiled = driver.events.drop(before).filterIsInstance<SurveiledEvent>().single()
         surveiled.count shouldBe 2
@@ -280,7 +294,7 @@ class SurveilTriggerScenarioTest : FunSpec({
 
         val before = driver.events.size
         driver.castLook(active, "Surveil Zero")
-        driver.bothPass()
+        driver.resolveStack()
 
         driver.events.drop(before).filterIsInstance<SurveiledEvent>() shouldBe emptyList()
         driver.events.drop(before).filterIsInstance<ScriedEvent>() shouldBe emptyList()

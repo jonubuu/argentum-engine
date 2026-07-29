@@ -101,6 +101,7 @@ class SpectatorStateBuilder(
             is ChooseReplacementDecision -> "Changing text"
             is BudgetModalDecision -> "Choosing modes"
             is SelectManaSourcesDecision -> "Selecting mana sources"
+            is OrderTriggersDecision -> "Ordering triggered abilities"
         }
         return ServerMessage.SpectatorDecisionStatus(
             playerName = playerName,

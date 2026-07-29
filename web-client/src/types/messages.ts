@@ -468,6 +468,27 @@ export interface OrderObjectsDecision extends PendingDecisionBase {
 }
 
 /**
+ * One triggered ability the controller is ordering among ≥ 2 that triggered at the same time
+ * (CR 603.3b). `description` is that ability's own rules text, so two abilities sharing one
+ * `sourceId` (e.g. Bridge from Below's token-creation and exile abilities) stay distinguishable.
+ */
+export interface TriggerOrderOption {
+  readonly sourceId: EntityId
+  readonly sourceName: string
+  readonly description: string
+}
+
+/**
+ * Player controls two or more triggered abilities that triggered at the same time and must choose
+ * the order they resolve in (CR 603.3b). `triggers` lists them in an arbitrary starting order; the
+ * response is a permutation of indices naming the resolution order (first entry resolves first).
+ */
+export interface OrderTriggersDecision extends PendingDecisionBase {
+  readonly type: 'OrderTriggersDecision'
+  readonly triggers: readonly TriggerOrderOption[]
+}
+
+/**
  * Player must choose a number (e.g., how many cards to draw).
  */
 export interface ChooseNumberDecision extends PendingDecisionBase {
@@ -756,6 +777,7 @@ export type PendingDecision =
   | AssignDamageDecision
   | CombatResolutionDecision
   | SplitPilesDecision
+  | OrderTriggersDecision
 
 /**
  * Information about a single target requirement for legal actions.

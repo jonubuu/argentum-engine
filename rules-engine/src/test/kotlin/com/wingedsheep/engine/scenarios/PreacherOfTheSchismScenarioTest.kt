@@ -39,7 +39,7 @@ class PreacherOfTheSchismScenarioTest : ScenarioTestBase() {
 
                 game.passUntilPhase(Phase.COMBAT, Step.DECLARE_ATTACKERS)
                 game.declareAttackers(mapOf("Preacher of the Schism" to 2)).error shouldBe null
-                game.resolveStack()
+                game.resolveStackAutoOrder()
 
                 withClue("attacked player has the most life → one Vampire token") {
                     game.findPermanents("Vampire Token").size shouldBe 1
@@ -65,7 +65,7 @@ class PreacherOfTheSchismScenarioTest : ScenarioTestBase() {
 
                 game.passUntilPhase(Phase.COMBAT, Step.DECLARE_ATTACKERS)
                 game.declareAttackers(mapOf("Preacher of the Schism" to 2)).error shouldBe null
-                game.resolveStack()
+                game.resolveStackAutoOrder()
 
                 withClue("you have the most life → draw a card and lose 1 life") {
                     game.state.getHand(game.player1Id).size shouldBe handBefore + 1
@@ -91,7 +91,7 @@ class PreacherOfTheSchismScenarioTest : ScenarioTestBase() {
 
                 game.passUntilPhase(Phase.COMBAT, Step.DECLARE_ATTACKERS)
                 game.declareAttackers(mapOf("Preacher of the Schism" to 2)).error shouldBe null
-                game.resolveStack()
+                game.resolveStackAutoOrder()
 
                 withClue("tied: the attacked player counts as most → Vampire token") {
                     game.findPermanents("Vampire Token").size shouldBe 1

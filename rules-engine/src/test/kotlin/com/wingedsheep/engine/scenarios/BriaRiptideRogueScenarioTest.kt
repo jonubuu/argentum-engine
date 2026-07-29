@@ -1,7 +1,9 @@
 package com.wingedsheep.engine.scenarios
 
 import com.wingedsheep.engine.core.OrderObjectsDecision
+import com.wingedsheep.engine.core.OrderTriggersDecision
 import com.wingedsheep.engine.core.OrderedResponse
+import com.wingedsheep.engine.core.TriggersOrderedResponse
 import com.wingedsheep.engine.mechanics.layers.StateProjector
 import com.wingedsheep.engine.support.ScenarioTestBase
 import com.wingedsheep.sdk.core.AbilityFlag
@@ -42,6 +44,8 @@ class BriaRiptideRogueScenarioTest : ScenarioTestBase() {
         while (getPendingDecision() != null && guard++ < 12) {
             when (val decision = getPendingDecision()!!) {
                 is OrderObjectsDecision -> submitDecision(OrderedResponse(decision.id, decision.objects))
+                is OrderTriggersDecision ->
+                    submitDecision(TriggersOrderedResponse(decision.id, decision.triggers.indices.reversed().toList()))
                 else -> selectTargets(listOf(unblockableTarget))
             }
             resolveStack()
@@ -128,7 +132,7 @@ class BriaRiptideRogueScenarioTest : ScenarioTestBase() {
 
                 val bria = game.findPermanent("Bria, Riptide Rogue")!!
                 game.castSpell(1, "Test Bear").error shouldBe null
-                game.resolveStack()
+                game.resolveStackAutoOrder()
 
                 withClue("casting a creature spell leaves Bria at base 3/3") {
                     val projected = projector.project(game.state)

@@ -83,7 +83,7 @@ class LadyOctopusInspiredInventorScenarioTest : ScenarioTestBase() {
                 // One cast draws three cards: draws #1 and #2 fire NthCardDrawn(1)/(2); #3 fires
                 // neither, so exactly two ingenuity counters land.
                 game.castSpell(1, "Draw Three Test").error shouldBe null
-                game.resolveStack()
+                game.resolveStackAutoOrder()
 
                 withClue("first + second draw each add one counter, third adds none") {
                     ingenuityCounters(game, "Lady Octopus, Inspired Inventor") shouldBe 2
@@ -108,7 +108,7 @@ class LadyOctopusInspiredInventorScenarioTest : ScenarioTestBase() {
 
                 // Build up two ingenuity counters via the draw triggers.
                 game.castSpell(1, "Draw Three Test").error shouldBe null
-                game.resolveStack()
+                game.resolveStackAutoOrder()
                 ingenuityCounters(game, "Lady Octopus, Inspired Inventor") shouldBe 2
 
                 val lady = game.findPermanent("Lady Octopus, Inspired Inventor")!!
@@ -123,12 +123,12 @@ class LadyOctopusInspiredInventorScenarioTest : ScenarioTestBase() {
 
                 // Ability resolves and pauses to choose which artifact to free-cast. Only the mv-2
                 // artifact is eligible (mv <= 2 counters); the mv-3 artifact is filtered out.
-                game.resolveStack()
+                game.resolveStackAutoOrder()
                 withClue("the {T} ability pauses for the artifact selection") {
                     (game.getPendingDecision() != null) shouldBe true
                 }
                 game.selectCards(listOf(mv2))
-                game.resolveStack()
+                game.resolveStackAutoOrder()
 
                 withClue("the mv-2 artifact was cast without paying and is now on the battlefield") {
                     (mv2 in game.state.getZone(ZoneKey(game.player1Id, Zone.BATTLEFIELD))) shouldBe true

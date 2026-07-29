@@ -1,0 +1,31 @@
+{
+  "_description": "Bridge from Below (FUT, {B}{B}{B} Enchantment, in graveyard) — CR 603.4a / CR 603.3b simultaneous-trigger-order interaction. Alice's Grizzly Bears attacks, Bob's Grizzly Bears blocks: both are 2/2 vanilla, so combat damage kills them AT THE SAME TIME in the COMBAT_DAMAGE step. That single simultaneous event is a legal trigger for BOTH of Bridge from Below's abilities at once: Alice's own nontoken creature dying ('create a 2/2 black Zombie') and Bob's (an opponent's) creature dying ('exile this card'). Per the official ruling: 'If a nontoken creature you control and a creature an opponent controls die at the same time, you choose the order the abilities go on the stack — you can create a Zombie token before you exile Bridge from Below.' Watch for: (1) does the engine detect both triggers off the one simultaneous death event; (2) does it ask Alice (the controller of both triggered abilities) to choose their stacking order, per CR 603.3b's APNAP + own-multiple-triggers rule, rather than picking an arbitrary/fixed order; (3) whichever order is chosen, confirm the RESULT is order-dependent: token-then-exile should end with a Zombie token AND Bridge from Below exiled (both abilities still found their condition true at their own resolution), while exile-then-token should end with Bridge from Below exiled but NO token (the CR 603.4a resolution-time recheck on the token ability fails because Bridge from Below already left the graveyard). If the engine has no 'choose simultaneous trigger order' decision yet and instead resolves them in a fixed queue order, that's the gap to report — this scenario is exactly built to surface it.",
+  "player1Name": "Alice",
+  "player2Name": "Bob",
+  "player1": {
+    "lifeTotal": 20,
+    "hand": [],
+    "battlefield": [
+      {"name": "Grizzly Bears", "summoningSickness": false}
+    ],
+    "graveyard": ["Bridge from Below"],
+    "library": ["Forest", "Forest"]
+  },
+  "player2": {
+    "lifeTotal": 20,
+    "hand": [],
+    "battlefield": [
+      {"name": "Grizzly Bears", "summoningSickness": false}
+    ],
+    "graveyard": [],
+    "library": ["Forest", "Forest"]
+  },
+  "phase": "COMBAT",
+  "step": "DECLARE_ATTACKERS",
+  "activePlayer": 1,
+  "priorityPlayer": 1,
+  "player1StopAtSteps": ["DECLARE_ATTACKERS", "DECLARE_BLOCKERS", "COMBAT_DAMAGE"],
+  "player2StopAtSteps": [],
+  "player1OpponentStopAtSteps": [],
+  "player2OpponentStopAtSteps": ["DECLARE_ATTACKERS", "DECLARE_BLOCKERS", "COMBAT_DAMAGE"]
+}

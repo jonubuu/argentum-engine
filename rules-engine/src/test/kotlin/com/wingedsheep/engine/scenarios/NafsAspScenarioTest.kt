@@ -42,7 +42,7 @@ class NafsAspScenarioTest : ScenarioTestBase() {
                 game.passUntilPhase(Phase.COMBAT, Step.DECLARE_ATTACKERS)
                 game.declareAttackers(mapOf("Nafs Asp" to 2)).error shouldBe null
                 game.passUntilPhase(Phase.COMBAT, Step.END_COMBAT)
-                game.resolveStack()
+                game.resolveStackAutoOrder()
 
                 withClue("Combat damage itself drops life by 1 (and only 1)") {
                     game.getLifeTotal(2) shouldBe startLife - 1
@@ -59,7 +59,7 @@ class NafsAspScenarioTest : ScenarioTestBase() {
 
                 // End Player1's turn, advance through cleanup to Player2's draw step.
                 game.passUntilPhase(Phase.BEGINNING, Step.DRAW)
-                game.resolveStack()
+                game.resolveStackAutoOrder()
 
                 withClue("Player1's life must not move — target is the damaged player, not the controller") {
                     game.getLifeTotal(1) shouldBe p1LifeBefore
@@ -86,14 +86,14 @@ class NafsAspScenarioTest : ScenarioTestBase() {
                 game.passUntilPhase(Phase.COMBAT, Step.DECLARE_ATTACKERS)
                 game.declareAttackers(mapOf("Nafs Asp" to 2)).error shouldBe null
                 game.passUntilPhase(Phase.COMBAT, Step.END_COMBAT)
-                game.resolveStack()
+                game.resolveStackAutoOrder()
 
                 val lifeAfterCombat = game.getLifeTotal(2)
 
                 // Stop at P2's UPKEEP — strictly one step before DRAW. The bite must not
                 // land yet (fireAtStep is DRAW, not UPKEEP).
                 game.passUntilPhase(Phase.BEGINNING, Step.UPKEEP)
-                game.resolveStack()
+                game.resolveStackAutoOrder()
 
                 withClue("Trigger is scheduled for P2's DRAW, not their UPKEEP") {
                     game.getLifeTotal(2) shouldBe lifeAfterCombat
@@ -102,7 +102,7 @@ class NafsAspScenarioTest : ScenarioTestBase() {
 
                 // Advance one more step to DRAW — trigger fires and suffer auto-resolves.
                 game.passUntilPhase(Phase.BEGINNING, Step.DRAW)
-                game.resolveStack()
+                game.resolveStackAutoOrder()
 
                 withClue("Bite lands on P2's DRAW step") {
                     game.getLifeTotal(2) shouldBe lifeAfterCombat - 1
@@ -127,7 +127,7 @@ class NafsAspScenarioTest : ScenarioTestBase() {
                 game.passUntilPhase(Phase.COMBAT, Step.DECLARE_ATTACKERS)
                 game.declareAttackers(mapOf("Nafs Asp" to 2)).error shouldBe null
                 game.passUntilPhase(Phase.COMBAT, Step.END_COMBAT)
-                game.resolveStack()
+                game.resolveStackAutoOrder()
 
                 val lifeAfterCombat = game.getLifeTotal(2)
 
@@ -135,7 +135,7 @@ class NafsAspScenarioTest : ScenarioTestBase() {
                 // decision to P2 ("Pay {1} or accept consequence?"). resolveStack stops on
                 // the pending decision rather than auto-answering.
                 game.passUntilPhase(Phase.BEGINNING, Step.DRAW)
-                game.resolveStack()
+                game.resolveStackAutoOrder()
 
                 withClue("Trigger resolved → P2 sees the pay-or-suffer decision") {
                     game.hasPendingDecision() shouldBe true
@@ -145,7 +145,7 @@ class NafsAspScenarioTest : ScenarioTestBase() {
                 // must fire — regression for the bug where the continuation rebuilt
                 // EffectContext without triggeringPlayerId, fizzling the LoseLife.
                 game.answerYesNo(false)
-                game.resolveStack()
+                game.resolveStackAutoOrder()
 
                 withClue("P2 declined to pay {1}, so the suffer's LoseLife on the triggering player resolves and drops life by 1") {
                     game.getLifeTotal(2) shouldBe lifeAfterCombat - 1
@@ -180,7 +180,7 @@ class NafsAspScenarioTest : ScenarioTestBase() {
                     DeclareAttackers(game.player1Id, asps.associateWith { game.player2Id })
                 ).error shouldBe null
                 game.passUntilPhase(Phase.COMBAT, Step.END_COMBAT)
-                game.resolveStack()
+                game.resolveStackAutoOrder()
 
                 val lifeAfterCombat = game.getLifeTotal(2)
 
@@ -197,7 +197,7 @@ class NafsAspScenarioTest : ScenarioTestBase() {
                 // Advance to P2's draw step: both bites fire and, with no mana to pay {1},
                 // both auto-suffer — P2 loses 1 life per bite.
                 game.passUntilPhase(Phase.BEGINNING, Step.DRAW)
-                game.resolveStack()
+                game.resolveStackAutoOrder()
 
                 withClue("Both deferred bites resolve at the draw step → P2 loses 2 more life") {
                     game.getLifeTotal(2) shouldBe lifeAfterCombat - 2
@@ -224,7 +224,7 @@ class NafsAspScenarioTest : ScenarioTestBase() {
 
                 // Don't attack — pass straight through to P2's draw step.
                 game.passUntilPhase(Phase.BEGINNING, Step.DRAW)
-                game.resolveStack()
+                game.resolveStackAutoOrder()
 
                 withClue("Nafs Asp dealt no damage to a player, so no delayed bite is scheduled") {
                     game.getLifeTotal(2) shouldBe startLifeP2

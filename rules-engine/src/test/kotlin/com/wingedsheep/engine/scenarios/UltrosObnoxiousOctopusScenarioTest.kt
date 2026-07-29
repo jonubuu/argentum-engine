@@ -64,12 +64,12 @@ class UltrosObnoxiousOctopusScenarioTest : ScenarioTestBase() {
             val bears = game.findPermanent("Grizzly Bears")!!
 
             game.castSpell(1, "Test Four Drop").error shouldBe null
-            game.resolveStack()
+            game.resolveStackAutoOrder()
             withClue("The ≥4 ability should pause to choose its opponent-creature target") {
                 game.hasPendingDecision() shouldBe true
             }
             game.selectTargets(listOf(bears))
-            game.resolveStack()
+            game.resolveStackAutoOrder()
 
             withClue("Opponent's Grizzly Bears is tapped") {
                 game.state.getEntity(bears)!!.has<TappedComponent>() shouldBe true
@@ -97,8 +97,8 @@ class UltrosObnoxiousOctopusScenarioTest : ScenarioTestBase() {
             // No opponent creature exists, so the ≥4 "tap target" ability has no legal target and
             // is not put on the stack. Only the ≥8 ability resolves.
             game.castSpell(1, "Test Eight Drop").error shouldBe null
-            game.resolveStack()
-            if (game.state.stack.isNotEmpty()) game.resolveStack()
+            game.resolveStackAutoOrder()
+            if (game.state.stack.isNotEmpty()) game.resolveStackAutoOrder()
 
             withClue("Eight +1/+1 counters land on Ultros (2/1 -> 10/9)") {
                 (game.state.getEntity(ultros)?.get<CountersComponent>()

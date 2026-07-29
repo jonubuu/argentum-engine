@@ -42,13 +42,13 @@ class OtjBatchBAurasScenarioTest : ScenarioTestBase() {
                 val victim = game.findPermanent("Hill Giant")!!
                 val cast = game.castSpell(1, "Mystical Tether")
                 withClue("Cast should succeed: ${cast.error}") { cast.error shouldBe null }
-                game.resolveStack() // enchantment enters → ETB trigger asks for a target
+                game.resolveStackAutoOrder() // enchantment enters → ETB trigger asks for a target
 
                 val selected = game.selectTargets(listOf(victim))
                 withClue("ETB target selection should succeed: ${selected.error}") {
                     selected.error shouldBe null
                 }
-                game.resolveStack()
+                game.resolveStackAutoOrder()
 
                 withClue("Hill Giant should be exiled while Mystical Tether is in play") {
                     game.isOnBattlefield("Hill Giant") shouldBe false
@@ -70,9 +70,9 @@ class OtjBatchBAurasScenarioTest : ScenarioTestBase() {
 
                 val artifact = game.findPermanent("Ornithopter")!!
                 game.castSpell(1, "Mystical Tether")
-                game.resolveStack()
+                game.resolveStackAutoOrder()
                 game.selectTargets(listOf(artifact))
-                game.resolveStack()
+                game.resolveStackAutoOrder()
 
                 withClue("Ornithopter (an artifact) should be a legal exile target") {
                     game.isOnBattlefield("Ornithopter") shouldBe false
@@ -98,9 +98,9 @@ class OtjBatchBAurasScenarioTest : ScenarioTestBase() {
                 val cast = game.castSpell(1, "Lassoed by the Law")
                 withClue("Cast should succeed: ${cast.error}") { cast.error shouldBe null }
                 // Two ETB triggers go on the stack; the exile trigger asks for a target.
-                game.resolveStack()
+                game.resolveStackAutoOrder()
                 game.selectTargets(listOf(victim))
-                game.resolveStack()
+                game.resolveStackAutoOrder()
 
                 withClue("Hill Giant should be exiled") {
                     game.isOnBattlefield("Hill Giant") shouldBe false
@@ -131,7 +131,7 @@ class OtjBatchBAurasScenarioTest : ScenarioTestBase() {
                 val creature = game.findPermanent("Hill Giant")!!
                 val cast = game.castSpell(1, "Reach for the Sky", creature)
                 withClue("Cast should succeed: ${cast.error}") { cast.error shouldBe null }
-                game.resolveStack()
+                game.resolveStackAutoOrder()
 
                 withClue("Hill Giant should be 6/5 (3/3 +3/+2) and have reach") {
                     projector.getProjectedPower(game.state, creature) shouldBe 6
@@ -155,7 +155,7 @@ class OtjBatchBAurasScenarioTest : ScenarioTestBase() {
 
                 val creature = game.findPermanent("Hill Giant")!!
                 game.castSpell(1, "Reach for the Sky", creature)
-                game.resolveStack()
+                game.resolveStackAutoOrder()
                 val aura = game.findPermanent("Reach for the Sky")!!
 
                 val handBefore = game.handSize(1)
@@ -168,7 +168,7 @@ class OtjBatchBAurasScenarioTest : ScenarioTestBase() {
                 withClue("Disenchant cast should succeed: ${disenchant.error}") {
                     disenchant.error shouldBe null
                 }
-                game.resolveStack()
+                game.resolveStackAutoOrder()
 
                 withClue("Reach for the Sky should be in its owner's graveyard") {
                     game.isInGraveyard(1, "Reach for the Sky") shouldBe true

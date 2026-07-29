@@ -86,6 +86,7 @@ class DecisionResponder(
             is SearchLibraryDecision -> respondSearchLibrary(state, decision, playerId)
             is ReorderLibraryDecision -> respondReorderLibrary(state, decision, playerId)
             is SelectManaSourcesDecision -> respondManaSelection(decision)
+            is OrderTriggersDecision -> respondOrderTriggers(state, decision, playerId)
         }
     }
 
@@ -411,6 +412,37 @@ class DecisionResponder(
             threat
         }
         return OrderedResponse(decision.id, ordered)
+    }
+
+    // ── Order triggers (CR 603.3b) ───────────────────────────────────────
+
+    /**
+     * Simulates every ordering of the tied triggered abilities and picks the best one. Exhaustive
+     * for up to 3 abilities (≤ 6 permutations, within this class's ~11-simulation budget — see the
+     * class doc); a tie of 4+ abilities is rare enough in practice that it isn't worth widening the
+     * search, so it keeps the decision's arbitrary starting order instead of simulating N!.
+     */
+    private fun respondOrderTriggers(
+        state: GameState,
+        decision: OrderTriggersDecision,
+        playerId: EntityId
+    ): DecisionResponse {
+        val indices = decision.triggers.indices.toList()
+        if (indices.size > 3) {
+            return TriggersOrderedResponse(decision.id, indices)
+        }
+        val best = permutationsOf(indices).maxByOrNull { order ->
+            evaluateResult(simulator.simulateDecision(state, TriggersOrderedResponse(decision.id, order)), playerId)
+        }!!
+        return TriggersOrderedResponse(decision.id, best)
+    }
+
+    private fun permutationsOf(items: List<Int>): List<List<Int>> {
+        if (items.size <= 1) return listOf(items)
+        return items.indices.flatMap { i ->
+            val rest = items.toMutableList().also { it.removeAt(i) }
+            permutationsOf(rest).map { listOf(items[i]) + it }
+        }
     }
 
     // ── Split piles ──────────────────────────────────────────────────────

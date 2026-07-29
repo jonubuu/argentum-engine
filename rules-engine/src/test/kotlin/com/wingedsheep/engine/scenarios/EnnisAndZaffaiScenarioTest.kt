@@ -50,12 +50,12 @@ class EnnisAndZaffaiScenarioTest : ScenarioTestBase() {
 
                 val bears = game.findPermanent("Grizzly Bears")!!
                 game.castSpell(1, "Ennis, Debate Moderator").error shouldBe null
-                game.resolveStack()
+                game.resolveStackAutoOrder()
 
                 // ETB trigger ("up to one other target creature you control") pauses for a target.
                 game.state.pendingDecision shouldNotBe null
                 game.selectTargets(listOf(bears))
-                game.resolveStack()
+                game.resolveStackAutoOrder()
 
                 withClue("the targeted creature is exiled") {
                     game.findPermanent("Grizzly Bears") shouldBe null
@@ -63,7 +63,7 @@ class EnnisAndZaffaiScenarioTest : ScenarioTestBase() {
 
                 // Advance to Ennis's end step: the delayed return and the counter trigger resolve.
                 game.passUntilPhase(Phase.ENDING, Step.END)
-                game.resolveStack()
+                game.resolveStackAutoOrder()
 
                 withClue("the exiled creature returns to the battlefield") {
                     game.findPermanent("Grizzly Bears") shouldNotBe null
@@ -83,7 +83,7 @@ class EnnisAndZaffaiScenarioTest : ScenarioTestBase() {
                     .build()
 
                 game.passUntilPhase(Phase.ENDING, Step.END)
-                game.resolveStack()
+                game.resolveStackAutoOrder()
 
                 val ennis = game.findPermanent("Ennis, Debate Moderator")!!
                 withClue("nothing was exiled this turn → the intervening-if is false, no counter") {
@@ -116,7 +116,7 @@ class EnnisAndZaffaiScenarioTest : ScenarioTestBase() {
                     game.state.getEntity(zaffai)
                         ?.get<MayCastWithoutPayingCostUsedThisTurnComponent>() shouldNotBe null
                 }
-                game.resolveStack()
+                game.resolveStackAutoOrder()
 
                 withClue("a second free cast this turn is refused — the permission was consumed") {
                     game.freeCast(1, "Divination").error shouldNotBe null

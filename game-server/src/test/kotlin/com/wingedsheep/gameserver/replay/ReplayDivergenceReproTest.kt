@@ -312,6 +312,9 @@ class ReplayDivergenceReproTest : ScenarioTestBase() {
             is OrderObjectsDecision ->
                 OrderedResponse(decision.id, decision.objects.shuffled(rng))
 
+            is OrderTriggersDecision ->
+                TriggersOrderedResponse(decision.id, decision.triggers.indices.shuffled(rng))
+
             is SplitPilesDecision -> {
                 val shuffled = decision.cards.shuffled(rng)
                 val splitPoint = if (shuffled.size > 1) rng.nextInt(1, shuffled.size) else 1

@@ -150,6 +150,7 @@ class DecisionEnricher(private val cardRegistry: CardRegistry) {
             is ChooseReplacementDecision -> "Changing text"
             is BudgetModalDecision -> "Choosing modes"
             is SelectManaSourcesDecision -> "Selecting mana sources"
+            is OrderTriggersDecision -> "Ordering triggered abilities"
         }
         return ServerMessage.OpponentDecisionStatus(
             playerId = decision.playerId.value,

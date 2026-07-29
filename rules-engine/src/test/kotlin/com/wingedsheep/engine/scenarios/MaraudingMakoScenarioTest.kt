@@ -1,5 +1,7 @@
 package com.wingedsheep.engine.scenarios
 
+import com.wingedsheep.engine.core.OrderTriggersDecision
+import com.wingedsheep.engine.core.TriggersOrderedResponse
 import com.wingedsheep.engine.state.components.battlefield.CountersComponent
 import com.wingedsheep.engine.support.ScenarioTestBase
 import com.wingedsheep.sdk.core.CounterType
@@ -37,11 +39,11 @@ class MaraudingMakoScenarioTest : ScenarioTestBase() {
             val cast = game.castSpell(1, "Faithless Looting")
             withClue("Faithless Looting cast should succeed: ${cast.error}") { cast.error shouldBe null }
             if (game.hasPendingDecision()) game.submitManaSourcesAutoPay()
-            game.resolveStack()
+            game.resolveStackAutoOrder()
             if (game.hasPendingDecision()) {
                 game.selectCards(game.findCardsInHand(1, "Grizzly Bears").take(2))
             }
-            game.resolveStack()
+            game.resolveStackAutoOrder()
 
             withClue("\"That many\" reads the size of the one discard event: 2") {
                 game.counters(mako) shouldBe 2
@@ -66,9 +68,15 @@ class MaraudingMakoScenarioTest : ScenarioTestBase() {
             val cycle = game.cycleCard(1, "Agonasaur Rex")
             withClue("Cycling should succeed: ${cycle.error}") { cycle.error shouldBe null }
             if (game.hasPendingDecision()) game.submitManaSourcesAutoPay()
+            // The discard fires two DIFFERENT abilities for the same controller at once — Mako's own
+            // discard-counter trigger and the Rex's own cycle trigger — so CR 603.3b now asks Player1
+            // to order them; the order doesn't matter for this assertion, keep the default.
+            (game.getPendingDecision() as? OrderTriggersDecision)?.let { decision ->
+                game.submitDecision(TriggersOrderedResponse(decision.id, decision.triggers.indices.reversed().toList()))
+            }
             // The Rex's own cycle trigger targets "up to one" — decline it, we only care about the Mako.
             if (game.hasPendingDecision()) game.skipTargets()
-            game.resolveStack()
+            game.resolveStackAutoOrder()
 
             withClue("One card discarded → one counter") { game.counters(mako) shouldBe 1 }
         }
@@ -87,7 +95,7 @@ class MaraudingMakoScenarioTest : ScenarioTestBase() {
             val cycle = game.cycleCard(1, "Marauding Mako")
             withClue("Cycling should succeed: ${cycle.error}") { cycle.error shouldBe null }
             if (game.hasPendingDecision()) game.submitManaSourcesAutoPay()
-            game.resolveStack()
+            game.resolveStackAutoOrder()
 
             withClue("It went to the graveyard and replaced itself with a draw") {
                 game.isInGraveyard(1, "Marauding Mako") shouldBe true

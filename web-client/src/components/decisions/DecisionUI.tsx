@@ -6,6 +6,7 @@ import { useResponsive } from '@/hooks/useResponsive.ts'
 import { LibrarySearchUI } from './LibrarySearchUI'
 import { ReorderCardsUI } from './ReorderCardsUI'
 import { OrderBlockersUI } from './OrderBlockersUI'
+import { OrderTriggersUI } from './OrderTriggersUI'
 import { CombatDamageAssignmentModal } from './CombatDamageAssignmentModal'
 import { CombatResolutionBoard } from './CombatResolutionBoard'
 import { YesNoDecisionUI } from './YesNoDecisionUI'
@@ -109,6 +110,11 @@ export function DecisionUI() {
     }
     // Other ordering decisions could use a generic ordering UI (not yet implemented)
     return null
+  }
+
+  // Handle OrderTriggersDecision (CR 603.3b — ordering a controller's own simultaneous triggers)
+  if (pendingDecision.type === 'OrderTriggersDecision') {
+    return <OrderTriggersUI key={pendingDecision.id} decision={pendingDecision} responsive={responsive} />
   }
 
   // Handle YesNoDecision (e.g., "You may shuffle your library")

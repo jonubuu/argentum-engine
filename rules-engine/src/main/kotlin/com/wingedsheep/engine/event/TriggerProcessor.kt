@@ -79,6 +79,18 @@ class TriggerProcessor(
             return ExecutionResult.success(state)
         }
 
+        // CR 603.3b: before any of these triggers go on the stack, resolve every controller's own
+        // ordering tie. `liveTriggers` is already APNAP-grouped (sortByApnapOrder), so a same-
+        // controller run is contiguous; findNextOrderableBlock finds the first such run that is both
+        // ≥2 items and not a "batchable" run of structurally identical triggers (order among truly
+        // interchangeable instances is moot, and BatchYesNoDecision already covers that case with one
+        // prompt). Resolving one block at a time — pausing, then re-entering this function with the
+        // block permuted and flagged orderResolved — means every remaining block still gets its own
+        // decision, in APNAP order, before the unchanged while loop below ever runs.
+        findNextOrderableBlock(state, liveTriggers)?.let { range ->
+            return raiseOrderTriggersDecision(state, liveTriggers, range)
+        }
+
         var currentState = state
         val allEvents = mutableListOf<GameEvent>()
 
@@ -140,6 +152,135 @@ class TriggerProcessor(
         }
 
         return ExecutionResult.success(currentState, allEvents)
+    }
+
+    /**
+     * The first contiguous same-controller run in [triggers] that needs a CR 603.3b ordering
+     * decision, or null if none remains. `sortByApnapOrder` already groups each controller's
+     * triggers into one contiguous block, so scanning for controller-boundaries finds exactly those
+     * blocks; a block already marked [PendingTrigger.orderResolved] (or naturally a singleton) is
+     * skipped, and a block that is one maximal run of structurally identical batchable triggers is
+     * skipped too — see [isUniformBatchableRun].
+     */
+    private fun findNextOrderableBlock(state: GameState, triggers: List<PendingTrigger>): IntRange? {
+        var i = 0
+        while (i < triggers.size) {
+            if (triggers[i].orderResolved) {
+                i++
+                continue
+            }
+            var j = i + 1
+            while (j < triggers.size &&
+                triggers[j].controllerId == triggers[i].controllerId &&
+                !triggers[j].orderResolved
+            ) {
+                j++
+            }
+            val block = triggers.subList(i, j)
+            if (block.size >= 2 && !isUniformBatchableRun(state, block)) return i until j
+            i = j
+        }
+        return null
+    }
+
+    /**
+     * True iff every trigger in [block] is a repeat of the same printed or synthesized ability firing
+     * more than once off the same event — order among them has no observable effect beyond "how many
+     * times did this happen," so raising an [OrderTriggersDecision] would be pure noise on top of
+     * whatever the identical prompts already collapse to (e.g. [BatchYesNoDecision]).
+     *
+     * Two signals, tried in order:
+     *  1. **Registered abilities** — every trigger's `ability.id` actually appears in its source's
+     *     card definition, and they all resolve the same
+     *     [com.wingedsheep.sdk.scripting.AbilityIdentity] (definition-scoped: same card definition,
+     *     same ability index — `AbilityIdentity.kt`). Covers Zhao, Ruthless Admiral's "another
+     *     permanent is sacrificed" pump firing once per simultaneously-sacrificed permanent, and N
+     *     copies of a "you may … target …" ability (also handled by [batchKeyOf]/[batchRunAt]).
+     *
+     *     [com.wingedsheep.engine.state.components.stack.abilityIdentityOf] alone isn't a safe
+     *     membership test here — it pairs a source's `cardDefinitionId` with *whatever* `AbilityId`
+     *     it's given, registered or not. A delayed trigger's ad-hoc `TriggeredAbility` (built fresh
+     *     per firing by
+     *     [com.wingedsheep.engine.event.TriggerDetector.detectDelayedTriggers], never added to any
+     *     card definition) still has a real source with a `CardComponent`, so it would resolve a
+     *     non-null identity — just a different random one each time — and wrongly fail this branch's
+     *     equality check instead of falling through. Checking actual membership in
+     *     `cardDef.triggeredAbilities` first is what tells registered and synthesized apart.
+     *
+     *  2. **Synthesized abilities** — a delayed trigger, or a Storm-style spell-copy trigger, whose
+     *     `ability.id` isn't a member of its source's registered abilities. Falls back to same
+     *     `sourceId` + same effect *kind*: Mobilize's per-token "sacrifice this token" delayed
+     *     triggers differ only in which token each names; N Storm copies of one spell are all the
+     *     same `StormCopyEffect`.
+     *
+     * A real printed card's genuinely distinct abilities (Bridge from Below's token-creation and
+     * exile abilities are separate `AbilityId`s on one source, both registered) always resolve real,
+     * unequal identities and take branch 1 — so this can't accidentally swallow a genuinely
+     * order-sensitive tie between two different abilities.
+     */
+    private fun isUniformBatchableRun(state: GameState, block: List<PendingTrigger>): Boolean {
+        val registered = block.map { isRegisteredAbility(state, it) }
+        if (registered.all { it }) {
+            val identities = block.map { state.abilityIdentityOf(it.sourceId, it.ability.id) }
+            return identities.all { it != null } && identities.distinct().size == 1
+        }
+        if (registered.any { it }) return false // mixed registered/synthesized — not safe to collapse
+
+        val first = block[0]
+        return block.all { it.sourceId == first.sourceId && it.ability.effect::class == first.ability.effect::class }
+    }
+
+    /** True iff [trigger]'s ability is actually one of its source's registered card-definition abilities. */
+    private fun isRegisteredAbility(state: GameState, trigger: PendingTrigger): Boolean {
+        val cardDefId = state.getEntity(trigger.sourceId)
+            ?.get<com.wingedsheep.engine.state.components.identity.CardComponent>()
+            ?.cardDefinitionId ?: return false
+        val cardDef = cardRegistry.getCard(cardDefId) ?: return false
+        return cardDef.triggeredAbilities.any { it.id == trigger.ability.id }
+    }
+
+    /**
+     * Split [triggers] at [range] — the next orderable block found by [findNextOrderableBlock] — and
+     * pause with an [OrderTriggersDecision] listing that block's abilities in their arbitrary
+     * detection order. [TriggerOrderContinuation] carries the untouched triggers before/after the
+     * block so [resumeTriggerOrder][com.wingedsheep.engine.handlers.continuations.EffectAndTriggerContinuationResumer]
+     * can splice the controller's chosen order back in and re-enter [processTriggers].
+     */
+    private fun raiseOrderTriggersDecision(
+        state: GameState,
+        triggers: List<PendingTrigger>,
+        range: IntRange
+    ): ExecutionResult {
+        val before = triggers.subList(0, range.first)
+        val block = triggers.subList(range.first, range.last + 1)
+        val after = triggers.subList(range.last + 1, triggers.size)
+
+        val controllerId = block.first().controllerId
+        val decisionId = "order-triggers-${java.util.UUID.randomUUID()}"
+        val decision = OrderTriggersDecision(
+            id = decisionId,
+            playerId = controllerId,
+            prompt = "Choose the order these abilities resolve (first listed resolves first)",
+            context = DecisionContext(phase = DecisionPhase.TRIGGER),
+            triggers = block.map { t -> TriggerOrderOption(t.sourceId, t.sourceName, t.ability.description) }
+        )
+
+        val stateWithContinuation = state
+            .pushContinuation(TriggerOrderContinuation(decisionId = decisionId, before = before, block = block, after = after))
+            .withPendingDecision(decision)
+
+        return ExecutionResult.paused(
+            stateWithContinuation,
+            decision,
+            listOf(
+                DecisionRequestedEvent(
+                    decisionId = decisionId,
+                    playerId = controllerId,
+                    decisionType = "ORDER_TRIGGERS",
+                    prompt = decision.prompt
+                )
+            )
+        )
     }
 
     /**

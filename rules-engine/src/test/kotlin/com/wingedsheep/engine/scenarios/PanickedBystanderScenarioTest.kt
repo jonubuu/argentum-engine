@@ -44,7 +44,7 @@ class PanickedBystanderScenarioTest : ScenarioTestBase() {
                 // Kill the fodder: its death → gain 3 life; the Bystander's dies-trigger → gain 1 more.
                 game.castSpell(1, "Lightning Bolt", targetId = fodder).error shouldBe null
                 if (game.getPendingDecision() is SelectManaSourcesDecision) game.submitManaSourcesAutoPay()
-                game.resolveStack()
+                game.resolveStackAutoOrder()
 
                 withClue("gained 3+ life this turn") { game.getLifeTotal(1) shouldBe 24 }
 
@@ -52,7 +52,7 @@ class PanickedBystanderScenarioTest : ScenarioTestBase() {
                 game.passUntilPhase(Phase.ENDING, Step.END)
                 var guard = 0
                 while (game.state.getEntity(bystander)!!.get<CardComponent>()!!.name == "Panicked Bystander" && guard++ < 10) {
-                    game.resolveStack()
+                    game.resolveStackAutoOrder()
                 }
 
                 withClue("gained 3+ life → transformed to Cackling Culprit (3/5)") {
@@ -73,7 +73,7 @@ class PanickedBystanderScenarioTest : ScenarioTestBase() {
                 val bystander = game.findPermanent("Panicked Bystander")!!
 
                 game.passUntilPhase(Phase.ENDING, Step.END)
-                repeat(3) { game.resolveStack() }
+                repeat(3) { game.resolveStackAutoOrder() }
 
                 withClue("no life gained → stays Panicked Bystander") {
                     game.state.getEntity(bystander)!!.get<CardComponent>()!!.name shouldBe "Panicked Bystander"
@@ -96,7 +96,7 @@ class PanickedBystanderScenarioTest : ScenarioTestBase() {
                     ActivateAbility(playerId = game.player1Id, sourceId = culprit, abilityId = deathtouchAbility)
                 ).error shouldBe null
                 if (game.getPendingDecision() is SelectManaSourcesDecision) game.submitManaSourcesAutoPay()
-                game.resolveStack()
+                game.resolveStackAutoOrder()
 
                 withClue("Cackling Culprit gained deathtouch until end of turn") {
                     game.state.projectedState.hasKeyword(culprit, Keyword.DEATHTOUCH) shouldBe true

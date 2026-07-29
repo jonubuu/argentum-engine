@@ -919,6 +919,26 @@ abstract class ScenarioTestBase : FunSpec() {
         }
 
         /**
+         * Like [resolveStack], but also transparently answers any [OrderTriggersDecision] (CR
+         * 603.3b: a controller with ≥ 2 simultaneously-triggered abilities chooses their order) by
+         * reproducing the engine's pre-feature processing order, then keeps resolving. For a test
+         * that only cares that everything eventually resolves, not which of several tied triggers
+         * goes first — a test that DOES care should call [resolveStack] directly and submit an
+         * explicit [TriggersOrderedResponse] via [submitDecision], the way
+         * `BridgeFromBelowScenarioTest` and `TriggerOrderingScenarioTest` do.
+         */
+        fun resolveStackAutoOrder(): List<ExecutionResult> {
+            val results = mutableListOf<ExecutionResult>()
+            var guard = 0
+            while (guard++ < 20) {
+                results += resolveStack()
+                val decision = state.pendingDecision as? OrderTriggersDecision ?: break
+                results += submitDecision(TriggersOrderedResponse(decision.id, decision.triggers.indices.reversed().toList()))
+            }
+            return results
+        }
+
+        /**
          * Get the client-facing state for a player.
          */
         fun getClientState(playerNumber: Int): ClientGameState {
@@ -1202,6 +1222,12 @@ abstract class ScenarioTestBase : FunSpec() {
                 }
                 is OrderObjectsDecision -> {
                     submitDecision(OrderedResponse(decision.id, decision.objects))
+                }
+                is OrderTriggersDecision -> {
+                    // Reproduce the pre-feature processing order exactly (see the equivalent
+                    // GameTestDriver.autoResolveDecision comment) — the reversed index list cancels
+                    // out the resumer's own reversal, reprocessing the original detection order.
+                    submitDecision(TriggersOrderedResponse(decision.id, decision.triggers.indices.reversed().toList()))
                 }
                 is DistributeDecision -> {
                     val distribution = decision.targets.associateWith { 0 }.toMutableMap()

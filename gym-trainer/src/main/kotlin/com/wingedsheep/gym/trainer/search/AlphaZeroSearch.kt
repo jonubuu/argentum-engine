@@ -18,6 +18,7 @@ import com.wingedsheep.engine.core.ModesChosenResponse
 import com.wingedsheep.engine.core.NumberChosenResponse
 import com.wingedsheep.engine.core.OptionChosenResponse
 import com.wingedsheep.engine.core.OrderObjectsDecision
+import com.wingedsheep.engine.core.OrderTriggersDecision
 import com.wingedsheep.engine.core.PendingDecision
 import com.wingedsheep.engine.core.ReorderLibraryDecision
 import com.wingedsheep.engine.core.SearchLibraryDecision
@@ -284,6 +285,7 @@ class AlphaZeroSearch<T>(
         is ChooseReplacementDecision,
         is DistributeDecision,
         is OrderObjectsDecision,
+        is OrderTriggersDecision,
         is SplitPilesDecision,
         is SearchLibraryDecision,
         is ReorderLibraryDecision,

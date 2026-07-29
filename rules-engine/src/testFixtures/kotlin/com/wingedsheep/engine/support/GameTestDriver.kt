@@ -260,6 +260,27 @@ class GameTestDriver {
     }
 
     /**
+     * Drain the stack with [bothPass], transparently answering any [OrderTriggersDecision] (CR
+     * 603.3b: a controller with ≥ 2 simultaneously-triggered abilities chooses their order) by
+     * reproducing the engine's pre-feature processing order along the way. For a test that only
+     * cares that everything eventually resolves, not which of several tied triggers goes first — a
+     * test that DOES care should drive `bothPass`/decisions manually and submit an explicit
+     * [TriggersOrderedResponse], the way `TriggerOrderingScenarioTest` does.
+     */
+    fun drainStackAutoOrder(maxSteps: Int = 40) {
+        var steps = 0
+        while (steps++ < maxSteps) {
+            val decision = state.pendingDecision as? OrderTriggersDecision
+            if (decision != null) {
+                submitDecision(decision.playerId, TriggersOrderedResponse(decision.id, decision.triggers.indices.reversed().toList()))
+                continue
+            }
+            if (state.stack.isEmpty()) return
+            bothPass()
+        }
+    }
+
+    /**
      * Pass priority until reaching the specified step.
      * This automates the common pattern of skipping through phases.
      *
@@ -1356,6 +1377,18 @@ class GameTestDriver {
             is SelectManaSourcesDecision -> {
                 // Auto-resolve: decline the mana source selection (e.g., Words of Wind prompt)
                 submitManaAutoPayOrDecline(decision.playerId, autoPay = false)
+            }
+            is OrderTriggersDecision -> {
+                // Auto-resolve: reproduce the engine's pre-feature processing order exactly. The
+                // resumer reverses `order` before splicing it back into the block (index 0 of the
+                // *resolution* order ends up pushed last = resolves first), so submitting the
+                // REVERSED index list here cancels that out and reprocesses the original detection
+                // order unchanged — i.e. this default behaves exactly as if the decision never
+                // existed, for callers that don't care which of the tied abilities resolves first.
+                submitDecision(
+                    decision.playerId,
+                    TriggersOrderedResponse(decision.id, decision.triggers.indices.reversed().toList())
+                )
             }
             else -> throw IllegalStateException(
                 "Cannot auto-resolve decision of type ${decision::class.simpleName}"

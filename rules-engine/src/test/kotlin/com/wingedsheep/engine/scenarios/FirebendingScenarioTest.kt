@@ -1,5 +1,7 @@
 package com.wingedsheep.engine.scenarios
 
+import com.wingedsheep.engine.core.OrderTriggersDecision
+import com.wingedsheep.engine.core.TriggersOrderedResponse
 import com.wingedsheep.engine.state.components.player.ManaPoolComponent
 import com.wingedsheep.engine.support.GameTestDriver
 import com.wingedsheep.engine.support.TestCards
@@ -51,8 +53,16 @@ class FirebendingScenarioTest : FunSpec({
     /** Fully resolve the stack, resolving every triggered ability that lands on it. */
     fun GameTestDriver.resolveStack() {
         var guard = 0
-        while (state.stack.isNotEmpty() && guard < 50) {
-            bothPass()
+        while ((state.stack.isNotEmpty() || state.pendingDecision != null) && guard < 50) {
+            // CR 603.3b: two simultaneous same-controller triggers now pause for an ordering
+            // decision. These tests never depend on which order they resolve in, so keep the
+            // engine's pre-feature processing order (see GameTestDriver.autoResolveDecision).
+            val decision = state.pendingDecision as? OrderTriggersDecision
+            if (decision != null) {
+                submitDecision(decision.playerId, TriggersOrderedResponse(decision.id, decision.triggers.indices.reversed().toList()))
+            } else {
+                bothPass()
+            }
             guard++
         }
     }

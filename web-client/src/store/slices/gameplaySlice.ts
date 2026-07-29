@@ -63,6 +63,7 @@ export interface GameplaySliceActions {
   submitDecision: (selectedCards: readonly EntityId[]) => void
   submitTargetsDecision: (selectedTargets: Record<number, readonly EntityId[]>) => void
   submitOrderedDecision: (orderedObjects: readonly EntityId[]) => void
+  submitTriggerOrderDecision: (order: readonly number[]) => void
   submitYesNoDecision: (choice: boolean) => void
   submitBatchYesNoDecision: (choice: boolean, applyToAll: boolean) => void
   submitNumberDecision: (number: number) => void
@@ -221,6 +222,25 @@ export const createGameplaySlice: SliceCreator<GameplaySlice> = (set, get) => ({
         type: 'OrderedResponse' as const,
         decisionId: pendingDecision.id,
         orderedObjects: [...orderedObjects],
+      },
+    }
+    getWebSocket()?.send(createSubmitActionMessage(action))
+  },
+
+  submitTriggerOrderDecision: (order) => {
+    const { pendingDecision, playerId } = get()
+    if (!pendingDecision || !playerId) return
+
+    const action = {
+      type: 'SubmitDecision' as const,
+      // Stamp the decision's owner, not the connection's own seat. Equal in normal play;
+      // in hotseat / Mindslaver control the one connection answers the other seat's
+      // decisions, and the engine requires SubmitDecision.playerId == pendingDecision.playerId.
+      playerId: pendingDecision.playerId,
+      response: {
+        type: 'TriggersOrderedResponse' as const,
+        decisionId: pendingDecision.id,
+        order: [...order],
       },
     }
     getWebSocket()?.send(createSubmitActionMessage(action))

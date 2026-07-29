@@ -39,7 +39,7 @@ class WeaponsManufacturingScenarioTest : ScenarioTestBase() {
                 withClue("Fellwar Stone should be cast successfully: ${cast.error}") {
                     cast.error shouldBe null
                 }
-                game.resolveStack()
+                game.resolveStackAutoOrder()
 
                 withClue("Fellwar Stone should be on the battlefield") {
                     game.isOnBattlefield("Fellwar Stone") shouldBe true
@@ -62,7 +62,7 @@ class WeaponsManufacturingScenarioTest : ScenarioTestBase() {
                     .build()
 
                 game.castSpell(1, "Fellwar Stone")
-                game.resolveStack()
+                game.resolveStackAutoOrder()
                 game.isOnBattlefield("Munitions") shouldBe true
 
                 val munitionsId = game.findPermanent("Munitions")!!
@@ -70,13 +70,13 @@ class WeaponsManufacturingScenarioTest : ScenarioTestBase() {
                 withClue("Naturalize should target the Munitions token: ${destroy.error}") {
                     destroy.error shouldBe null
                 }
-                game.resolveStack() // Naturalize resolves → Munitions LTB triggers, asks for target
+                game.resolveStackAutoOrder() // Naturalize resolves → Munitions LTB triggers, asks for target
 
                 withClue("Munitions LTB should request a target") {
                     game.hasPendingDecision() shouldBe true
                 }
                 game.selectTargets(listOf(game.player2Id))
-                game.resolveStack()
+                game.resolveStackAutoOrder()
 
                 withClue("Munitions should be gone") {
                     game.isOnBattlefield("Munitions") shouldBe false
@@ -98,7 +98,7 @@ class WeaponsManufacturingScenarioTest : ScenarioTestBase() {
                     .build()
 
                 game.castSpell(1, "Fellwar Stone")
-                game.resolveStack()
+                game.resolveStackAutoOrder()
 
                 // Fellwar Stone is the only nontoken artifact entering — exactly one Munitions
                 // should be created. The subsequent Robot token (created by Mechan Assembler)

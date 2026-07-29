@@ -40,6 +40,7 @@ class EffectAndTriggerContinuationResumer(
         resumer(BeholdContinuation::class, ::resumeBehold),
         resumer(MayTriggerContinuation::class, ::resumeMayTrigger),
         resumer(BatchMayTriggerContinuation::class, ::resumeBatchMayTrigger),
+        resumer(TriggerOrderContinuation::class, ::resumeTriggerOrder),
         resumer(ReflexiveTriggerResolveContinuation::class, ::resumeReflexiveTriggerResolve)
     )
 
@@ -423,6 +424,38 @@ class EffectAndTriggerContinuationResumer(
     ): com.wingedsheep.engine.event.PendingTrigger? {
         val inner = trigger.ability.effect.asMayDecide()?.then ?: return null
         return trigger.copy(ability = trigger.ability.copy(effect = inner))
+    }
+
+    /**
+     * Resume after the controller answers an [OrderTriggersDecision] (CR 603.3b). [response.order]
+     * names the *resolution* order (first entry resolves first); the stack resolves last-pushed-
+     * first, so the block is reversed before it's spliced back between [before] and [after] and fed
+     * through [processTriggers] again — which pushes list-order, so the reversed list's last element
+     * (the player's first pick) ends up pushed last, on top, resolving first. Every reordered trigger
+     * is stamped `orderResolved = true` so the re-entrant [processTriggers] call treats this exact
+     * block as settled and moves on (to the next controller's tie, or the ordinary stack-placement
+     * loop) instead of re-offering the same decision.
+     */
+    private fun resumeTriggerOrder(
+        state: GameState,
+        continuation: TriggerOrderContinuation,
+        response: DecisionResponse,
+        checkForMore: CheckForMore
+    ): ExecutionResult {
+        if (response !is TriggersOrderedResponse) {
+            return ExecutionResult.error(state, "Expected trigger-order response")
+        }
+
+        val block = continuation.block
+        val validPermutation = response.order.size == block.size && response.order.toSet() == block.indices.toSet()
+        val order = if (validPermutation) response.order else block.indices.toList()
+
+        val resolvedBlock = order.reversed().map { idx -> block[idx].copy(orderResolved = true) }
+        val combined = continuation.before + resolvedBlock + continuation.after
+
+        val result = services.triggerProcessor.processTriggers(state, combined)
+        if (result.isPaused || !result.isSuccess) return result
+        return checkForMore(result.newState, result.events.toList())
     }
 
     private fun resumeMayAbility(

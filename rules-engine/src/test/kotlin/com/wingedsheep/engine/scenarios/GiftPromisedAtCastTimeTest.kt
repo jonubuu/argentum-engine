@@ -1,6 +1,8 @@
 package com.wingedsheep.engine.scenarios
 
 import com.wingedsheep.engine.core.CastSpell
+import com.wingedsheep.engine.core.OrderTriggersDecision
+import com.wingedsheep.engine.core.TriggersOrderedResponse
 import com.wingedsheep.engine.state.components.battlefield.AttachedToComponent
 import com.wingedsheep.engine.state.components.battlefield.CountersComponent
 import com.wingedsheep.engine.state.components.battlefield.TappedComponent
@@ -98,9 +100,9 @@ class GiftPromisedAtCastTimeTest : ScenarioTestBase() {
                 }
 
                 game.execute(freeGift.action).error shouldBe null
-                game.resolveStack()
+                game.resolveStackAutoOrder()
                 game.selectTargets(listOf(game.findPermanent("Sol Ring").shouldNotBeNull()))
-                game.resolveStack()
+                game.resolveStackAutoOrder()
 
                 withClue("promised on a free cast, the gift and its rider both happen") {
                     game.handSize(2) shouldBe 1
@@ -133,7 +135,7 @@ class GiftPromisedAtCastTimeTest : ScenarioTestBase() {
                 withClue("casting with a promised gift should succeed: ${cast.error}") {
                     cast.error shouldBe null
                 }
-                game.resolveStack()
+                game.resolveStackAutoOrder()
 
                 withClue("the gift must not be a question asked after the Aura entered") {
                     game.hasPendingDecision() shouldBe false
@@ -170,7 +172,7 @@ class GiftPromisedAtCastTimeTest : ScenarioTestBase() {
                         targets = listOf(ChosenTarget.Permanent(bears))
                     )
                 ).error shouldBe null
-                game.resolveStack()
+                game.resolveStackAutoOrder()
 
                 withClue("no promise, no gift trigger (CR 702.174b intervening if)") {
                     game.handSize(2) shouldBe handBefore
@@ -198,13 +200,13 @@ class GiftPromisedAtCastTimeTest : ScenarioTestBase() {
                             giftRecipient = if (promise) game.player2Id else null
                         )
                     ).error shouldBe null
-                    game.resolveStack()
+                    game.resolveStackAutoOrder()
                     // The promised cast's destroy trigger targets when it goes on the stack
                     // (CR 603.3d) — pick the only legal artifact, then finish resolving.
                     if (promise) {
                         game.getPendingDecision().shouldNotBeNull()
                         game.selectTargets(listOf(game.findPermanent("Sol Ring").shouldNotBeNull()))
-                        game.resolveStack()
+                        game.resolveStackAutoOrder()
                     }
                     return game
                 }
@@ -243,9 +245,9 @@ class GiftPromisedAtCastTimeTest : ScenarioTestBase() {
                         giftRecipient = game.player2Id
                     )
                 ).error shouldBe null
-                game.resolveStack()
+                game.resolveStackAutoOrder()
                 game.selectTargets(listOf(lions))
-                game.resolveStack()
+                game.resolveStackAutoOrder()
 
                 withClue("gift a tapped Fish (CR 702.174f) goes to the promised opponent") {
                     val fish = game.findPermanent("Fish Token").shouldNotBeNull()
@@ -280,7 +282,7 @@ class GiftPromisedAtCastTimeTest : ScenarioTestBase() {
                         giftRecipient = game.player2Id
                     )
                 ).error shouldBe null
-                game.resolveStack()
+                game.resolveStackAutoOrder()
 
                 withClue("the gift ability resolving is what gives the gift, so Gerbils draws") {
                     game.handSize(1) shouldBe casterHandBefore + 1
@@ -310,7 +312,7 @@ class GiftPromisedAtCastTimeTest : ScenarioTestBase() {
                 ).error shouldBe null
                 game.passPriority()
                 game.castSpellTargetingStackSpell(2, "Dismiss", "Scrapshooter").error shouldBe null
-                game.resolveStack()
+                game.resolveStackAutoOrder()
 
                 withClue("Scrapshooter never entered, so its gift trigger never fired") {
                     game.isInGraveyard(1, "Scrapshooter") shouldBe true
@@ -343,8 +345,18 @@ class GiftPromisedAtCastTimeTest : ScenarioTestBase() {
                 val handsBefore = players.associateWith { driver.state.getZone(it, Zone.HAND).size }
                 driver.submitSuccess(CastSpell(caster, scrapshooter, giftRecipient = secondOpponent))
                 var passes = 0
-                while (driver.state.stack.isNotEmpty() && driver.state.pendingDecision == null && passes++ < 30) {
-                    driver.passPriority(driver.priorityPlayer!!)
+                while (passes++ < 30 && (driver.state.stack.isNotEmpty() || driver.state.pendingDecision != null)) {
+                    val decision = driver.state.pendingDecision as? OrderTriggersDecision
+                    if (decision != null) {
+                        driver.submitDecision(
+                            decision.playerId,
+                            TriggersOrderedResponse(decision.id, decision.triggers.indices.reversed().toList())
+                        )
+                    } else if (driver.state.pendingDecision == null) {
+                        driver.passPriority(driver.priorityPlayer!!)
+                    } else {
+                        break
+                    }
                 }
 
                 withClue("only the promised opponent draws") {

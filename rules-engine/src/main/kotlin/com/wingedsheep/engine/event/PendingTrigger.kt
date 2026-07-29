@@ -33,7 +33,16 @@ data class PendingTrigger(
      * [com.wingedsheep.engine.core.SagaChapterResolvedEvent] (the cue for "whenever the final
      * chapter ability of a Saga you control resolves" — Tom Bombadil).
      */
-    val sagaChapterInfo: SagaChapterInfo? = null
+    val sagaChapterInfo: SagaChapterInfo? = null,
+    /**
+     * True once this trigger's position among its controller's other simultaneous triggers has
+     * been fixed — either by an [com.wingedsheep.engine.core.OrderTriggersDecision] the controller
+     * answered (CR 603.3b), or because [TriggerProcessor] determined no such decision was needed
+     * (a singleton, or a run of structurally identical triggers where order is unobservable). Marks
+     * the *same* contiguous same-controller run so [TriggerProcessor] doesn't re-offer the decision
+     * every time it re-scans the list on continuation resume.
+     */
+    val orderResolved: Boolean = false
 )
 
 /**

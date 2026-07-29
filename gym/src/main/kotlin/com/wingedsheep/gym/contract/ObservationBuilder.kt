@@ -20,6 +20,7 @@ import com.wingedsheep.engine.core.ModesChosenResponse
 import com.wingedsheep.engine.core.NumberChosenResponse
 import com.wingedsheep.engine.core.OptionChosenResponse
 import com.wingedsheep.engine.core.OrderObjectsDecision
+import com.wingedsheep.engine.core.OrderTriggersDecision
 import com.wingedsheep.engine.core.PendingDecision
 import com.wingedsheep.engine.core.ReorderLibraryDecision
 import com.wingedsheep.engine.core.SearchLibraryDecision
@@ -467,6 +468,12 @@ class ObservationBuilder(
                     ActionRegistry.EMPTY
             is SelectManaSourcesDecision ->
                 baseView(decision, PendingDecisionKind.SELECT_MANA_SOURCES, baseShape, structured = true) to
+                    ActionRegistry.EMPTY
+            // CR 603.3b tie-breaking among a controller's own simultaneous triggers — reuses the
+            // ORDER_OBJECTS encoding kind (same "structured, not yet actionable" shape) rather than
+            // adding a new PendingDecisionKind, mirroring how BatchYesNoDecision reuses YES_NO above.
+            is OrderTriggersDecision ->
+                baseView(decision, PendingDecisionKind.ORDER_OBJECTS, baseShape, structured = true) to
                     ActionRegistry.EMPTY
         }
     }

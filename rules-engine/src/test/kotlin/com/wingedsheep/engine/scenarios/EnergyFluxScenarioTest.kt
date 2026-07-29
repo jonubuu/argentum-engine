@@ -41,7 +41,7 @@ class EnergyFluxScenarioTest : ScenarioTestBase() {
                 // presents the pay-{2}-or-sacrifice decision.
                 game.passUntilPhase(Phase.ENDING, Step.END)
                 game.passUntilPhase(Phase.BEGINNING, Step.UPKEEP)
-                game.resolveStack()
+                game.resolveStackAutoOrder()
 
                 game.answerYesNo(true) // pay {2}
 
@@ -64,9 +64,9 @@ class EnergyFluxScenarioTest : ScenarioTestBase() {
 
                 game.passUntilPhase(Phase.ENDING, Step.END)
                 game.passUntilPhase(Phase.BEGINNING, Step.UPKEEP)
-                game.resolveStack()
+                game.resolveStackAutoOrder()
                 game.answerYesNo(false) // decline
-                game.resolveStack()
+                game.resolveStackAutoOrder()
 
                 withClue("Declining the {2} sacrifices the artifact") {
                     game.isOnBattlefield("Ornithopter") shouldBe false
@@ -94,7 +94,7 @@ class EnergyFluxScenarioTest : ScenarioTestBase() {
                 // auto-suffers and the opponent's artifact is sacrificed.
                 game.passUntilPhase(Phase.ENDING, Step.END)
                 game.passUntilPhase(Phase.BEGINNING, Step.UPKEEP)
-                game.resolveStack()
+                game.resolveStackAutoOrder()
 
                 withClue("Unable to pay {2}, the opponent's artifact is sacrificed on their upkeep") {
                     game.isOnBattlefield("Ornithopter") shouldBe false

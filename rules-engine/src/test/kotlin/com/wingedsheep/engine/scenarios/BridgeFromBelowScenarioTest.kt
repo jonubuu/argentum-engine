@@ -1,10 +1,13 @@
 package com.wingedsheep.engine.scenarios
 
+import com.wingedsheep.engine.core.OrderTriggersDecision
+import com.wingedsheep.engine.core.TriggersOrderedResponse
 import com.wingedsheep.engine.support.ScenarioTestBase
 import com.wingedsheep.sdk.core.Phase
 import com.wingedsheep.sdk.core.Step
 import io.kotest.assertions.withClue
 import io.kotest.matchers.shouldBe
+import io.kotest.matchers.types.shouldBeInstanceOf
 
 /**
  * Bridge from Below — {B}{B}{B} Enchantment (Future Sight).
@@ -20,12 +23,14 @@ import io.kotest.matchers.shouldBe
  *
  * The core thing under test beyond the trigger wiring itself: the printed "if this card is in
  * your graveyard" is a real CR 603.4a resolution-time recheck, not a redundant restatement of
- * `triggerZone`. Test 4 pins exactly the ruling this matters for: "if a nontoken creature you
+ * `triggerZone`. Tests 4-5 pin exactly the ruling this matters for: "if a nontoken creature you
  * control and a creature an opponent controls die at the same time, you choose the order... you
- * can create a token before you exile Bridge from Below" — implying the reverse order suppresses
- * the token. This engine has no "choose simultaneous trigger order" decision yet, so test 4 proves
- * the same underlying mechanism (the resolution-time graveyard recheck) sequentially instead: once
- * Bridge from Below has left the graveyard, a later nontoken death does not create a token.
+ * can create a token before you exile Bridge from Below." Pyroclasm ("deals 2 damage to each
+ * creature") kills both 2/2 Grizzly Bears in one state-based-action check — a genuinely
+ * simultaneous death — so both of Bridge from Below's abilities fire off the same event and the
+ * engine raises an [OrderTriggersDecision] (CR 603.3b: a player controlling ≥ 2 abilities that
+ * triggered at once chooses their stacking order). Test 4 answers token-then-exile and gets both;
+ * test 5 answers exile-then-token and the resolution-time recheck suppresses the token.
  */
 class BridgeFromBelowScenarioTest : ScenarioTestBase() {
 
@@ -111,42 +116,69 @@ class BridgeFromBelowScenarioTest : ScenarioTestBase() {
             }
         }
 
-        test("CR 603.4a: once Bridge from Below has left the graveyard, a later nontoken death creates no token") {
-            val game = scenario()
-                .withPlayers("Player1", "Player2")
-                .withCardInGraveyard(1, "Bridge from Below")
-                .withCardOnBattlefield(1, "Grizzly Bears")
-                .withCardOnBattlefield(2, "Grizzly Bears")
-                .withCardInHand(1, "Terror")
-                .withCardInHand(1, "Terror")
-                .withCardOnBattlefield(1, "Swamp")
-                .withCardOnBattlefield(1, "Swamp")
-                .withCardOnBattlefield(1, "Swamp")
-                .withCardOnBattlefield(1, "Swamp")
-                .withActivePlayer(1)
-                .inPhase(Phase.PRECOMBAT_MAIN, Step.PRECOMBAT_MAIN)
-                .build()
+        fun simultaneousDeathGame() = scenario()
+            .withPlayers("Player1", "Player2")
+            .withCardInGraveyard(1, "Bridge from Below")
+            .withCardOnBattlefield(1, "Grizzly Bears")
+            .withCardOnBattlefield(2, "Grizzly Bears")
+            .withCardInHand(1, "Pyroclasm")
+            .withCardOnBattlefield(1, "Mountain")
+            .withCardOnBattlefield(1, "Mountain")
+            .withActivePlayer(1)
+            .inPhase(Phase.PRECOMBAT_MAIN, Step.PRECOMBAT_MAIN)
+            .build()
 
-            // First, the opponent's creature dies — Bridge from Below is exiled (ability 2).
-            val opponentBears = game.findPermanents("Grizzly Bears")
-                .first { game.state.projectedState.getController(it) == game.player2Id }
-            game.castSpell(1, "Terror", targetId = opponentBears)
+        test("CR 603.3b: token-then-exile order creates the Zombie AND exiles Bridge from Below") {
+            val game = simultaneousDeathGame()
+
+            // Pyroclasm deals 2 damage to each creature — both 2/2 Grizzly Bears die in the same
+            // state-based-action check, a genuinely simultaneous death. Both of Bridge from Below's
+            // abilities (both controlled by Player1) fire off that one event.
+            val cast = game.castSpell(1, "Pyroclasm")
+            withClue("Pyroclasm should resolve: ${cast.error}") { cast.error shouldBe null }
             game.resolveStack()
 
-            withClue("Bridge from Below is now exiled") {
+            val decision = game.getPendingDecision().shouldBeInstanceOf<OrderTriggersDecision>()
+            withClue("Both abilities are controlled by Player1 and are distinguishable") {
+                decision.triggers.size shouldBe 2
+                decision.triggers.map { it.description }.toSet().size shouldBe 2
+            }
+            val tokenIndex = decision.triggers.indexOfFirst { it.description.contains("Zombie") }
+            val exileIndex = decision.triggers.indexOfFirst { it.description.contains("exile", ignoreCase = true) }
+
+            game.submitDecision(TriggersOrderedResponse(decision.id, listOf(tokenIndex, exileIndex)))
+            game.resolveStack()
+
+            withClue("A 2/2 black Zombie token was created") {
+                (game.findPermanent("Zombie Token") != null) shouldBe true
+            }
+            withClue("Bridge from Below was exiled") {
                 game.isInExile(1, "Bridge from Below") shouldBe true
             }
+        }
 
-            // Now the player's own nontoken creature dies. Bridge from Below is no longer in the
-            // graveyard, so — even though it's still the same "if this card is in your graveyard"
-            // ability that fired for the first death — the resolution-time recheck must suppress it.
-            val ownBears = game.findPermanents("Grizzly Bears")
-                .first { game.state.projectedState.getController(it) == game.player1Id }
-            game.castSpell(1, "Terror", targetId = ownBears)
+        test("CR 603.3b / 603.4a: exile-then-token order suppresses the token") {
+            val game = simultaneousDeathGame()
+
+            val cast = game.castSpell(1, "Pyroclasm")
+            withClue("Pyroclasm should resolve: ${cast.error}") { cast.error shouldBe null }
             game.resolveStack()
 
-            withClue("No token — Bridge from Below was already out of the graveyard") {
+            val decision = game.getPendingDecision().shouldBeInstanceOf<OrderTriggersDecision>()
+            val tokenIndex = decision.triggers.indexOfFirst { it.description.contains("Zombie") }
+            val exileIndex = decision.triggers.indexOfFirst { it.description.contains("exile", ignoreCase = true) }
+
+            // The exile ability resolves FIRST this time — by the time the token ability resolves,
+            // Bridge from Below has already left the graveyard, so the CR 603.4a resolution-time
+            // recheck suppresses the token. This is the reverse-order half of the official ruling.
+            game.submitDecision(TriggersOrderedResponse(decision.id, listOf(exileIndex, tokenIndex)))
+            game.resolveStack()
+
+            withClue("No token — Bridge from Below had already left the graveyard when this ability resolved") {
                 game.findPermanent("Zombie Token") shouldBe null
+            }
+            withClue("Bridge from Below was still exiled") {
+                game.isInExile(1, "Bridge from Below") shouldBe true
             }
         }
 

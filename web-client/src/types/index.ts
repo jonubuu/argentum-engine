@@ -196,6 +196,8 @@ export type {
   SearchCardInfo,
   ReorderLibraryDecision,
   OrderObjectsDecision,
+  OrderTriggersDecision,
+  TriggerOrderOption,
   ChooseNumberDecision,
   ChooseOptionDecision,
   ChooseReplacementDecision,

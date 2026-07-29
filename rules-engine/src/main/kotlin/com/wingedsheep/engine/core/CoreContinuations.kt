@@ -157,6 +157,24 @@ data class PendingTriggersContinuation(
 ) : ContinuationFrame
 
 /**
+ * Resume after the controller answers an [OrderTriggersDecision] (CR 603.3b) ordering ≥ 2 of their
+ * own simultaneously-triggered abilities.
+ *
+ * [before] and [after] are the triggers earlier/later in APNAP order that this decision doesn't
+ * touch; [block] is the ordered decision's original sub-list. On resume, [block] is permuted per the
+ * [TriggersOrderedResponse] and every item is stamped `orderResolved = true` before the combined
+ * list re-enters [com.wingedsheep.engine.event.TriggerProcessor.processTriggers] — which then either
+ * finds the next unresolved tie (another controller's block) or falls into ordinary stack placement.
+ */
+@Serializable
+data class TriggerOrderContinuation(
+    override val decisionId: String,
+    val before: List<com.wingedsheep.engine.event.PendingTrigger>,
+    val block: List<com.wingedsheep.engine.event.PendingTrigger>,
+    val after: List<com.wingedsheep.engine.event.PendingTrigger>
+) : ContinuationFrame
+
+/**
  * Resume spell resolution after target or mode selection.
  *
  * @property spellId The spell entity on the stack

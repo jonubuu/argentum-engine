@@ -1,10 +1,12 @@
 package com.wingedsheep.engine.scenarios
 
 import com.wingedsheep.engine.core.CardsSelectedResponse
+import com.wingedsheep.engine.core.OrderTriggersDecision
 import com.wingedsheep.engine.core.OrderedResponse
 import com.wingedsheep.engine.core.ReorderLibraryDecision
 import com.wingedsheep.engine.core.ScriedEvent
 import com.wingedsheep.engine.core.SelectCardsDecision
+import com.wingedsheep.engine.core.TriggersOrderedResponse
 import com.wingedsheep.engine.state.ZoneKey
 import com.wingedsheep.engine.state.components.battlefield.CountersComponent
 import com.wingedsheep.engine.support.GameTestDriver
@@ -89,10 +91,22 @@ class ScryTriggerScenarioTest : FunSpec({
     }
 
     // Resolve everything currently on the stack (multiple simultaneous "whenever you scry"
-    // triggers stack together, so a single bothPass only resolves the top one).
+    // triggers stack together, so a single bothPass only resolves the top one). Two DIFFERENT
+    // "whenever you scry" abilities on the same controller (e.g. Scry Watcher + Scry Counter) now
+    // pause for a CR 603.3b ordering decision; these tests don't care which fires first, so keep
+    // the engine's pre-feature processing order (see GameTestDriver.autoResolveDecision).
     fun GameTestDriver.resolveStack() {
         var guard = 0
-        while (stackSize > 0 && guard++ < 10) bothPass()
+        while (guard++ < 10 && (stackSize > 0 || pendingDecision != null)) {
+            val decision = pendingDecision as? OrderTriggersDecision
+            if (decision != null) {
+                submitDecision(decision.playerId, TriggersOrderedResponse(decision.id, decision.triggers.indices.reversed().toList()))
+            } else if (stackSize > 0) {
+                bothPass()
+            } else {
+                break
+            }
+        }
     }
 
     // Cast the named scry spell, then drive all resolution-time decisions:
@@ -138,11 +152,11 @@ class ScryTriggerScenarioTest : FunSpec({
 
         val watcher = driver.putCreatureOnBattlefield(active, "Scry Watcher")
         driver.castScry(active, "Scry One")
-        driver.bothPass()
+        driver.resolveStack()
         driver.plusOneCounters(watcher) shouldBe 1
 
         driver.castScry(active, "Scry Three")
-        driver.bothPass()
+        driver.resolveStack()
         driver.plusOneCounters(watcher) shouldBe 2
     }
 
@@ -155,11 +169,11 @@ class ScryTriggerScenarioTest : FunSpec({
         val counter = driver.putCreatureOnBattlefield(active, "Scry Counter")
 
         driver.castScry(active, "Scry Three")
-        driver.bothPass()
+        driver.resolveStack()
         driver.plusOneCounters(counter) shouldBe 3
 
         driver.castScry(active, "Scry One")
-        driver.bothPass()
+        driver.resolveStack()
         driver.plusOneCounters(counter) shouldBe 4
     }
 
@@ -174,7 +188,7 @@ class ScryTriggerScenarioTest : FunSpec({
 
         val before = driver.events.size
         driver.castScry(active, "Scry Three")
-        driver.bothPass()
+        driver.resolveStack()
 
         val scried = driver.events.drop(before).filterIsInstance<ScriedEvent>().single()
         scried.count shouldBe 2
@@ -212,7 +226,7 @@ class ScryTriggerScenarioTest : FunSpec({
 
         val before = driver.events.size
         driver.castScry(active, "Scry Zero")
-        driver.bothPass()
+        driver.resolveStack()
 
         driver.events.drop(before).filterIsInstance<ScriedEvent>() shouldBe emptyList()
         driver.plusOneCounters(watcher) shouldBe 0

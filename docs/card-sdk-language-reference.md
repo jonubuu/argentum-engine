@@ -3090,6 +3090,16 @@ its own "if this card is in your graveyard" clause needs that modeled separately
 `Conditions.SourceInZone` (see §12), since a triggered ability, once on the stack, otherwise resolves
 independent of its source's current location (CR 112.7a).
 
+**Simultaneous triggers from one controller (CR 603.3b) are ordered by the player, automatically —
+no card-authoring surface.** When a single controller has ≥ 2 triggered abilities that fired off the
+same event (e.g. Bridge from Below's token-creation and exile abilities both firing off one
+simultaneous-death event), the engine pauses with an `OrderTriggersDecision` so that player chooses
+which resolves first, rather than imposing a fixed order — the chosen order can change the outcome
+(see `Conditions.SourceInZone` above). This is skipped for a run of *structurally identical* optional
+triggers, which already collapse to one `BatchYesNoDecision` prompt (order among interchangeable
+instances is unobservable). Nothing about writing a `triggeredAbility { }` changes to get this —
+across-controller ordering (APNAP) and this same-controller tie-breaking both happen for free.
+
 **`oncePerTurn` vs `triggersOnce` — two firing caps.** `oncePerTurn = true` caps the ability to one
 fire per turn ("This ability triggers only once each turn", e.g. Scavenger's Talent), tracked by a
 per-turn component cleared in cleanup. `triggersOnce = true` is the lifetime cap ("This ability

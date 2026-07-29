@@ -45,7 +45,7 @@ class TdmCardsGroupAScenarioTest : ScenarioTestBase() {
                 withClue("Casting Alesha's Legacy targeting the Bear should succeed") {
                     game.castSpell(1, "Alesha's Legacy", targetId = bear).error shouldBe null
                 }
-                game.resolveStack()
+                game.resolveStackAutoOrder()
 
                 withClue("Bear has deathtouch and indestructible until end of turn") {
                     game.state.projectedState.hasKeyword(bear, Keyword.DEATHTOUCH) shouldBe true
@@ -69,8 +69,8 @@ class TdmCardsGroupAScenarioTest : ScenarioTestBase() {
                 withClue("Casting the creature face should succeed") {
                     game.castSpell(1, "Bloomvine Regent").error shouldBe null
                 }
-                game.resolveStack() // resolve the creature
-                game.resolveStack() // resolve the ETB life-gain trigger
+                game.resolveStackAutoOrder() // resolve the creature
+                game.resolveStackAutoOrder() // resolve the ETB life-gain trigger
 
                 val regent = game.findPermanent("Bloomvine Regent")!!
                 withClue("Bloomvine Regent is a 4/5 with flying") {
@@ -98,8 +98,8 @@ class TdmCardsGroupAScenarioTest : ScenarioTestBase() {
                 withClue("Casting Sagu Wildling should succeed") {
                     game.castSpell(1, "Sagu Wildling").error shouldBe null
                 }
-                game.resolveStack() // Sagu Wildling enters
-                game.resolveStack() // resolve triggers (Sagu's own +3, Bloomvine's +3)
+                game.resolveStackAutoOrder() // Sagu Wildling enters
+                game.resolveStackAutoOrder() // resolve triggers (Sagu's own +3, Bloomvine's +3)
 
                 withClue("Both Dragon ETB triggers gained 3 life each (Sagu's own + Bloomvine's)") {
                     game.getLifeTotal(1) shouldBe startingLife + 6
@@ -176,7 +176,7 @@ class TdmCardsGroupAScenarioTest : ScenarioTestBase() {
                 withClue("Casting Death Begets Life should succeed") {
                     game.castSpell(1, "Death Begets Life").error shouldBe null
                 }
-                game.resolveStack()
+                game.resolveStackAutoOrder()
 
                 withClue("All creatures were destroyed") {
                     game.findPermanents("Grizzly Bears").size shouldBe 0
@@ -221,7 +221,7 @@ class TdmCardsGroupAScenarioTest : ScenarioTestBase() {
                 withClue("Activating the sacrifice ability should succeed: ${activation.error}") {
                     activation.error shouldBe null
                 }
-                game.resolveStack() // ability resolves → token created → ETB trigger goes on stack
+                game.resolveStackAutoOrder() // ability resolves → token created → ETB trigger goes on stack
 
                 withClue("Reliquary Dragon token was created") {
                     game.findPermanent("Reliquary Dragon") shouldNotBe null
@@ -236,7 +236,7 @@ class TdmCardsGroupAScenarioTest : ScenarioTestBase() {
 
                 // The ETB trigger needs a target — aim 3 damage at the opponent.
                 game.selectTargets(listOf(game.player2Id))
-                game.resolveStack()
+                game.resolveStackAutoOrder()
 
                 withClue("Reliquary Dragon dealt 3 damage to the opponent on ETB") {
                     game.getLifeTotal(2) shouldBe opponentStartLife - 3

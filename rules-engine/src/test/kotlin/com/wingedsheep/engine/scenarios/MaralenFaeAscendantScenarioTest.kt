@@ -64,8 +64,8 @@ class MaralenFaeAscendantScenarioTest : ScenarioTestBase() {
                     .build()
 
                 game.castSpell(1, "Maralen, Fae Ascendant")
-                game.resolveStack()
-                game.resolveStack() // ETB trigger resolution (TargetOpponent auto-selects in 2p)
+                game.resolveStackAutoOrder()
+                game.resolveStackAutoOrder() // ETB trigger resolution (TargetOpponent auto-selects in 2p)
 
                 val maralenId = game.findPermanent("Maralen, Fae Ascendant")!!
                 val linked = game.state.getEntity(maralenId)?.get<LinkedExileComponent>()
@@ -96,8 +96,8 @@ class MaralenFaeAscendantScenarioTest : ScenarioTestBase() {
                 val maralenId = game.findPermanent("Maralen, Fae Ascendant")!!
 
                 game.castSpell(1, "Sample Faerie")
-                game.resolveStack()  // Sample Faerie resolves and enters
-                game.resolveStack()  // Maralen's ETB trigger from another Faerie entering
+                game.resolveStackAutoOrder()  // Sample Faerie resolves and enters
+                game.resolveStackAutoOrder()  // Maralen's ETB trigger from another Faerie entering
 
                 val linked = game.state.getEntity(maralenId)?.get<LinkedExileComponent>()
                 linked shouldNotBe null
@@ -123,8 +123,8 @@ class MaralenFaeAscendantScenarioTest : ScenarioTestBase() {
                     .build()
 
                 game.castSpell(1, "Maralen, Fae Ascendant")
-                game.resolveStack()
-                game.resolveStack()  // ETB trigger exiles top 2
+                game.resolveStackAutoOrder()
+                game.resolveStackAutoOrder()  // ETB trigger exiles top 2
 
                 val maralenId = game.findPermanent("Maralen, Fae Ascendant")!!
                 game.isInExile(2, "Cheap Filler") shouldBe true
@@ -134,7 +134,7 @@ class MaralenFaeAscendantScenarioTest : ScenarioTestBase() {
                 val cheapId = findCardInExile(game, 2, "Cheap Filler")!!
                 val result = game.execute(CastSpell(game.player1Id, cheapId))
                 result.error shouldBe null
-                game.resolveStack()
+                game.resolveStackAutoOrder()
 
                 game.isOnBattlefield("Cheap Filler") shouldBe true
                 game.state.getEntity(maralenId)
@@ -157,8 +157,8 @@ class MaralenFaeAscendantScenarioTest : ScenarioTestBase() {
                     .build()
 
                 game.castSpell(1, "Maralen, Fae Ascendant")
-                game.resolveStack()
-                game.resolveStack()
+                game.resolveStackAutoOrder()
+                game.resolveStackAutoOrder()
 
                 val beefyId = findCardInExile(game, 2, "Beefy Filler")!!
                 val result = game.execute(CastSpell(game.player1Id, beefyId))
@@ -181,8 +181,8 @@ class MaralenFaeAscendantScenarioTest : ScenarioTestBase() {
                     .build()
 
                 game.castSpell(1, "Maralen, Fae Ascendant")
-                game.resolveStack()
-                game.resolveStack()
+                game.resolveStackAutoOrder()
+                game.resolveStackAutoOrder()
 
                 val legalActions = game.getLegalActions(1)
                 val cheapCast = legalActions.find { it.description == "Cast Cheap Filler" }
@@ -216,8 +216,8 @@ class MaralenFaeAscendantScenarioTest : ScenarioTestBase() {
                     .build()
 
                 game.castSpell(1, "Sample Faerie")
-                game.resolveStack()  // Sample Faerie resolves and enters
-                game.resolveStack()  // Maralen ETB exiles top 2
+                game.resolveStackAutoOrder()  // Sample Faerie resolves and enters
+                game.resolveStackAutoOrder()  // Maralen ETB exiles top 2
 
                 game.isInExile(2, "Beefy Filler") shouldBe true
 
@@ -247,12 +247,12 @@ class MaralenFaeAscendantScenarioTest : ScenarioTestBase() {
                     .build()
 
                 game.castSpell(1, "Maralen, Fae Ascendant")
-                game.resolveStack()
-                game.resolveStack()
+                game.resolveStackAutoOrder()
+                game.resolveStackAutoOrder()
 
                 val firstCheap = findCardInExile(game, 2, "Cheap Filler")!!
                 game.execute(CastSpell(game.player1Id, firstCheap)).error shouldBe null
-                game.resolveStack()
+                game.resolveStackAutoOrder()
 
                 // Second castable card is still in exile, but the once-per-turn permission is spent.
                 val secondCheap = findCardInExile(game, 2, "Cheap Filler")
@@ -287,12 +287,12 @@ class MaralenFaeAscendantScenarioTest : ScenarioTestBase() {
                     .build()
 
                 game.castSpell(1, "Maralen, Fae Ascendant")
-                game.resolveStack()
-                game.resolveStack()
+                game.resolveStackAutoOrder()
+                game.resolveStackAutoOrder()
 
                 val firstCheap = findCardInExile(game, 2, "Cheap Filler")!!
                 game.execute(CastSpell(game.player1Id, firstCheap)).error shouldBe null
-                game.resolveStack()
+                game.resolveStackAutoOrder()
 
                 val maralenId = game.findPermanent("Maralen, Fae Ascendant")!!
                 game.state.getEntity(maralenId)
@@ -310,8 +310,8 @@ class MaralenFaeAscendantScenarioTest : ScenarioTestBase() {
                 // Cast a Faerie on turn 3 to re-trigger Maralen so two more cards land in
                 // exile this turn — the only ones eligible under exiledThisTurnOnly.
                 game.castSpell(1, "Sample Faerie")
-                game.resolveStack()  // Sample Faerie resolves
-                game.resolveStack()  // Maralen ETB exiles top 2 of P2's library
+                game.resolveStackAutoOrder()  // Sample Faerie resolves
+                game.resolveStackAutoOrder()  // Maralen ETB exiles top 2 of P2's library
 
                 val freshCheap = freshlyExiledCard(game, 2, "Cheap Filler")!!
                 val secondResult = game.execute(CastSpell(game.player1Id, freshCheap))
@@ -337,8 +337,8 @@ class MaralenFaeAscendantScenarioTest : ScenarioTestBase() {
                     .build()
 
                 game.castSpell(1, "Maralen, Fae Ascendant")
-                game.resolveStack()
-                game.resolveStack()
+                game.resolveStackAutoOrder()
+                game.resolveStackAutoOrder()
 
                 val turn1Cheap = findCardInExile(game, 2, "Cheap Filler")!!
 
@@ -365,8 +365,8 @@ class MaralenFaeAscendantScenarioTest : ScenarioTestBase() {
                 // with turn 3 timestamps and should be flagged castable; the stale
                 // turn-1 entry must remain unflagged in the same view.
                 game.castSpell(1, "Sample Faerie")
-                game.resolveStack()
-                game.resolveStack()
+                game.resolveStackAutoOrder()
+                game.resolveStackAutoOrder()
 
                 val freshCheap = freshlyExiledCard(game, 2, "Cheap Filler")!!
                 val view = game.getClientState(1)
@@ -390,8 +390,8 @@ class MaralenFaeAscendantScenarioTest : ScenarioTestBase() {
                     .build()
 
                 game.castSpell(1, "Maralen, Fae Ascendant")
-                game.resolveStack()
-                game.resolveStack()
+                game.resolveStackAutoOrder()
+                game.resolveStackAutoOrder()
 
                 val maralenId = game.findPermanent("Maralen, Fae Ascendant")!!
                 game.state.getEntity(maralenId)?.get<LinkedExileComponent>()
@@ -399,7 +399,7 @@ class MaralenFaeAscendantScenarioTest : ScenarioTestBase() {
 
                 val firstCheap = findCardInExile(game, 2, "Cheap Filler")!!
                 game.execute(CastSpell(game.player1Id, firstCheap)).error shouldBe null
-                game.resolveStack()
+                game.resolveStackAutoOrder()
 
                 // Cast card has left exile — Maralen's link must drop it.
                 val linkedAfter = game.state.getEntity(maralenId)?.get<LinkedExileComponent>()
