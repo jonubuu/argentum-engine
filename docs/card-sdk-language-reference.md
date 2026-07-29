@@ -5282,8 +5282,17 @@ Flying, Menace, Intimidate, Fear, Shadow, Horsemanship, all basic landwalks (Pla
 `LandwalkRule` checks `typeLine.isLand && !isBasicLand`; Trailblazer's Boots), First Strike, Double
 Strike, Trample, Deathtouch, Lifelink, Vigilance, Reach, Provoke, Defender, Indestructible, Hexproof, Shroud, Haste,
 Flash, Prowess, Flurry, Changeling, Convoke, Delve, Affinity, Storm, Flashback, Harmonize, Mayhem, Evoke, Sneak, Ninjutsu, Web-slinging, Impending, Conspire, Casualty, Miracle, Hideaway, Cascade, Plot,
-Offspring, Persist, Enduring, Ascend, Start your engines!, Max speed, Wither, Toxic, Eerie, Vivid, Fateful Bite, Exploit, … (display-only — engine effect lives in handlers or
+Offspring, Persist, Enduring, Max speed, Wither, Toxic, Eerie, Vivid, Fateful Bite, Exploit, … (display-only — engine effect lives in handlers or
 composite abilities).
+
+**Two keywords in this family are exceptions — genuinely load-bearing, not display-only:**
+`Ascend` (`Keyword.ASCEND`) and `Start your engines!` (`Keyword.START_YOUR_ENGINES`) are each read
+directly off *projected* battlefield permanents by a dedicated state-based-action check
+(`AscendCheck`, `StartYourEnginesCheck`) every SBA pass, rather than by a per-card trigger. Adding
+either via `keywords(...)` is the entire card-authoring surface — no `triggeredAbility { }` needed.
+Ascend specifically (CR 702.131b, permanent form): "Any time you control ten or more permanents and
+you don't have the city's blessing, you get the city's blessing for the rest of the game" — a
+continuous check, so reaching ten permanents *after* the Ascend permanent enters still grants it.
 
 **Parameterized `KeywordAbility.*`**
 
@@ -7993,8 +8002,20 @@ Card authors rarely reference these directly; they are created/updated by the ma
   Rendezvous (end-step trigger gated on `Conditions.OpponentHasMoreCardsInHand`).
 - **Hideaway N** — `KeywordAbility.hideaway(n)` (display, "Hideaway N") + `MoveCollectionEffect(faceDown = FaceDownMode.HIDDEN,
   linkToSource = true)` + `CardSource.FromLinkedExile()`; no special engine plumbing needed.
-- **Ascend / City's Blessing** — `Keyword.ASCEND` + `Effects.GainCitysBlessing()` + `Conditions.YouHaveCitysBlessing` /
-  `SourceProjectionCondition.ControllerHasCitysBlessing` + `PlayerCitysBlessingComponent`.
+- **Ascend / City's Blessing** — two forms per CR 702.131, don't conflate them:
+  - *Permanent* (CR 702.131b, a continuous static ability) — add `Keyword.ASCEND` via `keywords(...)`
+    and nothing else. `AscendCheck`, a state-based-action-shaped check, scans projected battlefield
+    permanents for the keyword every SBA pass and grants the blessing the moment a controller reaches
+    ten permanents — at any point, not just when the Ascend permanent itself enters. No
+    `triggeredAbility { }` needed or wanted; one was this codebase's original (wrong) implementation
+    for every Ascend permanent before this was fixed.
+  - *Instant/sorcery* (CR 702.131a, a one-shot resolution-time check) — `Effects.GainCitysBlessing()`
+    gated by `Conditions.ControlPermanentsAtLeast(10)` as an intervening-if, since the spell only
+    checks once, on resolution.
+  - Both forms share `CitysBlessingService.grant` (idempotent — CR 702.131c makes the blessing a
+    permanent designation, so granting it twice is a no-op) and set the same
+    `PlayerCitysBlessingComponent`, read by `Conditions.YouHaveCitysBlessing` /
+    `SourceProjectionCondition.ControllerHasCitysBlessing`.
 - **Speed / Start your engines! / Max speed** (Aetherdrift, CR 702.178–702.179) — a player's speed is
   an `Int` 0–4 (`Speed.NONE` / `Speed.STARTING` / `Speed.MAX` in `core/Speed.kt`) held by
   `PlayerSpeedComponent`. It only ever rises, is clamped at 4, and is never removed — like the city's

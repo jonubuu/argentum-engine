@@ -682,7 +682,7 @@ data class CreatePermanentEmblemEffect(
 }
 
 /**
- * Grants the city's blessing to a player (CR 702.131 / 700.5).
+ * Grants the city's blessing to a player (CR 702.131).
  *
  * Once a player has the city's blessing, they have it for the rest of the game and
  * it can never be removed. Applying this effect to a player who already has the

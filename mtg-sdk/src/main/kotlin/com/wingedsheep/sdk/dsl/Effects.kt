@@ -1058,7 +1058,7 @@ object Effects {
     )
 
     /**
-     * Grants the city's blessing to a player (CR 702.131 / 700.5).
+     * Grants the city's blessing to a player (CR 702.131).
      *
      * Once granted, never lost — applying again is a no-op. Used as the
      * resolution effect of Ascend triggers, typically gated by an intervening-if

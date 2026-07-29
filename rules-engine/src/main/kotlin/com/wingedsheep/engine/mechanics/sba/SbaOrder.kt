@@ -6,6 +6,7 @@ package com.wingedsheep.engine.mechanics.sba
  */
 object SbaOrder {
     const val START_YOUR_ENGINES = 50       // 704.5z (Aetherdrift speed)
+    const val ASCEND = 60                   // 702.131b (Ascend on a permanent — city's blessing)
     const val PLAYER_LIFE_LOSS = 100        // 704.5a
     const val COMMANDER_DAMAGE_LOSS = 150   // 704.5c (Commander format)
     const val POISON_LOSS = 200             // 704.5b

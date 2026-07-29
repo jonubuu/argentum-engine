@@ -332,10 +332,18 @@ enum class Keyword(val displayName: String) {
     RENEW("Renew"),
 
     /**
-     * Ascend (Ixalan, CR 702.131). On a permanent spell, means "When this permanent
-     * enters, if you control ten or more permanents, you get the city's blessing
-     * for the rest of the game." Engine wires the trigger explicitly per card; the
-     * keyword itself is only a textual marker for rules-text display.
+     * Ascend (Ixalan, CR 702.131). On a permanent, CR 702.131b makes it a *static* ability: "Any
+     * time you control ten or more permanents and you don't have the city's blessing, you get the
+     * city's blessing for the rest of the game" — a continuous check, not a one-shot at ETB.
+     *
+     * Like [START_YOUR_ENGINES], this is load-bearing, not display-only: the engine's `AscendCheck`
+     * state-based-action-shaped check (`rules-engine/.../mechanics/sba/player/AscendCheck.kt`) scans
+     * projected battlefield permanents for this keyword every SBA pass, so granting it to a
+     * permanent at runtime works and reaching ten permanents *after* it enters still grants the
+     * blessing. Add it with `keywords(Keyword.ASCEND)` — no other wiring needed on the card.
+     *
+     * (CR 702.131a is the *instant/sorcery* form — a one-shot resolution-time check — modeled
+     * separately via `Effects.GainCitysBlessing()` gated by an intervening-if.)
      */
     ASCEND("Ascend"),
 

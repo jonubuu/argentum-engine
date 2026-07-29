@@ -676,7 +676,7 @@ data class CantCastFromNonHandZonesComponent(
 ) : Component
 
 /**
- * Marks a player as having the city's blessing (CR 702.131 / 700.5).
+ * Marks a player as having the city's blessing (CR 702.131).
  *
  * Granted by Ascend triggers when their controller controls 10+ permanents on
  * resolution. Per CR 702.131c, the city's blessing is **permanent for the rest of

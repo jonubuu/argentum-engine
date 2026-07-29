@@ -325,8 +325,9 @@ object Conditions {
         )
 
     /**
-     * If you control N or more permanents (any type).
-     * Used as the intervening-if for Ascend triggers (10+ permanents → city's blessing).
+     * If you control N or more permanents (any type). A general threshold condition — Ascend
+     * (CR 702.131) no longer uses this; that's a continuous engine-side check
+     * (`AscendCheck`), not a card-authored condition. See [Keyword.ASCEND].
      */
     fun ControlPermanentsAtLeast(count: Int): ConditionInterface =
         Compare(
@@ -1600,7 +1601,7 @@ object Conditions {
         IsInPhaseCondition(listOf(Phase.PRECOMBAT_MAIN, Phase.POSTCOMBAT_MAIN), yoursOnly = true)
 
     /**
-     * If you have the city's blessing (CR 702.131 / 700.5).
+     * If you have the city's blessing (CR 702.131).
      *
      * Granted by Ascend triggers once the controller controls 10+ permanents on
      * ETB; once granted, never lost for the rest of the game.

@@ -50,16 +50,12 @@ val OcelotPride = card("Ocelot Pride") {
         "Cat creature token. Then if you have the city's blessing, for each token you control " +
         "that entered this turn, create a token that's a copy of it."
 
+    // Ascend is load-bearing here, not display-only: AscendCheck (a state-based-action-shaped
+    // continuous recheck, CR 702.131b) grants the city's blessing the moment this player controls
+    // ten or more permanents — at any point, not just when this creature enters. See AscendCheck's
+    // own doc comment for why a one-shot ETB trigger (this card's previous implementation) misses
+    // reaching the threshold later in the same turn or a future one.
     keywords(Keyword.FIRST_STRIKE, Keyword.LIFELINK, Keyword.ASCEND)
-
-    // Ascend: when this enters, if you control 10+ permanents, gain the city's blessing.
-    triggeredAbility {
-        trigger = Triggers.EntersBattlefield
-        effect = ConditionalEffect(
-            condition = Conditions.ControlPermanentsAtLeast(10),
-            effect = Effects.GainCitysBlessing()
-        )
-    }
 
     triggeredAbility {
         trigger = Triggers.YourEndStep

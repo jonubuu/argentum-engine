@@ -1,22 +1,19 @@
 package com.wingedsheep.engine.handlers.effects.player
 
-import com.wingedsheep.engine.core.CitysBlessingGainedEvent
 import com.wingedsheep.engine.core.EffectResult
 import com.wingedsheep.engine.handlers.EffectContext
 import com.wingedsheep.engine.handlers.effects.EffectExecutor
+import com.wingedsheep.engine.mechanics.blessing.CitysBlessingService
 import com.wingedsheep.engine.state.GameState
 import com.wingedsheep.engine.state.components.identity.CardComponent
-import com.wingedsheep.engine.state.components.identity.PlayerComponent
-import com.wingedsheep.engine.state.components.player.PlayerCitysBlessingComponent
 import com.wingedsheep.sdk.scripting.effects.GainCitysBlessingEffect
 import kotlin.reflect.KClass
 
 /**
- * Resolves [GainCitysBlessingEffect].
- *
- * Adds [PlayerCitysBlessingComponent] to the target player. Idempotent: if the
- * player already has the blessing, nothing changes and no event fires (per
- * CR 702.131c the blessing is permanent — granting it twice is a no-op).
+ * Resolves [GainCitysBlessingEffect] — the instant/sorcery spell-ability form of Ascend
+ * (CR 702.131a), a one-shot resolution-time check. [CitysBlessingService] does the actual granting
+ * (idempotent per CR 702.131c) and is shared with the permanent static-ability form
+ * (CR 702.131b, [com.wingedsheep.engine.mechanics.sba.player.AscendCheck]).
  */
 class GainCitysBlessingExecutor : EffectExecutor<GainCitysBlessingEffect> {
 
@@ -34,25 +31,15 @@ class GainCitysBlessingExecutor : EffectExecutor<GainCitysBlessingEffect> {
             return EffectResult.error(state, "City's blessing target must be a player")
         }
 
-        val playerContainer = state.getEntity(targetId)
-            ?: return EffectResult.error(state, "Target player no longer exists")
-
-        if (playerContainer.has<PlayerCitysBlessingComponent>()) {
-            return EffectResult.success(state)
+        if (state.getEntity(targetId) == null) {
+            return EffectResult.error(state, "Target player no longer exists")
         }
 
-        val newState = state.updateEntity(targetId) { container ->
-            container.with(PlayerCitysBlessingComponent)
-        }
-
-        val playerName = playerContainer.get<PlayerComponent>()?.name ?: "Player"
         val sourceName = context.sourceId?.let {
             state.getEntity(it)?.get<CardComponent>()?.name
         } ?: "Unknown"
 
-        return EffectResult.success(
-            newState,
-            listOf(CitysBlessingGainedEvent(targetId, playerName, sourceName))
-        )
+        val (newState, events) = CitysBlessingService.grant(state, targetId, sourceName)
+        return EffectResult.success(newState, events)
     }
 }

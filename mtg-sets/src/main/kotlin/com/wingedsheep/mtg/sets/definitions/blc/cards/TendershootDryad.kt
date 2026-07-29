@@ -9,7 +9,6 @@ import com.wingedsheep.sdk.dsl.card
 import com.wingedsheep.sdk.model.Rarity
 import com.wingedsheep.sdk.scripting.ConditionalStaticAbility
 import com.wingedsheep.sdk.scripting.ModifyStats
-import com.wingedsheep.sdk.scripting.effects.ConditionalEffect
 import com.wingedsheep.sdk.scripting.filters.unified.GroupFilter
 
 val TendershootDryad = card("Tendershoot Dryad") {
@@ -22,17 +21,10 @@ val TendershootDryad = card("Tendershoot Dryad") {
         "At the beginning of each upkeep, create a 1/1 green Saproling creature token.\n" +
         "Saprolings you control get +2/+2 as long as you have the city's blessing."
 
+    // Ascend is load-bearing here, not display-only: AscendCheck (a state-based-action-shaped
+    // continuous recheck, CR 702.131b) grants the city's blessing the moment this player controls
+    // ten or more permanents — at any point, not just when this creature enters.
     keywords(Keyword.ASCEND)
-
-    // Ascend: when this enters, if you control 10+ permanents, gain the city's blessing.
-    // Wired explicitly per CR 702.131a (Ascend on a permanent spell == ETB intervening-if).
-    triggeredAbility {
-        trigger = Triggers.EntersBattlefield
-        effect = ConditionalEffect(
-            condition = Conditions.ControlPermanentsAtLeast(10),
-            effect = Effects.GainCitysBlessing()
-        )
-    }
 
     // At the beginning of each upkeep, create a 1/1 green Saproling token.
     triggeredAbility {
